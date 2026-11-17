@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>民匠有约 · 合伙人加盟后台管理系统</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<!-- ============ 登录 ============ -->
+<div id="loginPage" class="page-auth">
+  <div class="auth-left">
+    <div class="auth-brand">
+      <div class="brand-mark">民</div>
+      <div class="brand-text"><b>民匠有约</b><span>MINJIANG PARTNER CONSOLE</span></div>
+    </div>
+    <div class="auth-hero">
+      <div class="hero-tag">2026 综合版招商政策 · 官方系统</div>
+      <h1>一套系统，<br>管好你的<span>权益</span>与<span>收益</span></h1>
+      <p>城市合伙人 · 城市服务商 · 招商顾问 · 全员营销<br>从入驻签约到分润结算，全流程在线、口径统一、账目可溯。</p>
+      <div class="hero-stats">
+        <div><b>3</b><span>合伙人等级</span></div>
+        <div><b>10+</b><span>收益来源</span></div>
+        <div><b>25日</b><span>每月自动结算</span></div>
+      </div>
+    </div>
+    <div class="auth-foot">依据《民匠有约招商政策（2026版）》及《金银铜合伙人分佣体系补充说明》构建 · 最终解释权归公司所有</div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-box">
+      <div class="auth-box-head">
+        <h2>欢迎登录</h2>
+        <p>请输入入驻登记的手机号、密码与短信验证码</p>
+      </div>
+      <form id="loginForm" autocomplete="off">
+        <label class="field">
+          <span>手机号</span>
+          <div class="input-wrap"><i class="ico ico-phone"></i><input id="loginPhone" type="tel" maxlength="11" placeholder="请输入 11 位手机号" value="13800008888"></div>
+        </label>
+        <label class="field" id="pwdField">
+          <span>登录密码</span>
+          <div class="input-wrap"><i class="ico ico-lock"></i><input id="loginPwd" type="password" placeholder="请输入密码" value="123456"><button type="button" class="eye" id="togglePwd">显示</button></div>
+        </label>
+        <label class="field" id="smsField">
+          <span>短信验证码</span>
+          <div class="input-wrap"><i class="ico ico-shield"></i><input id="loginSms" type="text" maxlength="6" placeholder="演示环境：任意 6 位数字"><button type="button" class="sms-btn" id="sendSms">获取验证码</button></div>
+        </label>
+        <div class="form-row">
+          <label class="check"><input type="checkbox" id="agreeChk" checked><span>我已阅读并同意 <a href="#" id="showAgreement">《渠道合作协议》</a>与<a href="#" id="showPrivacy">《隐私政策》</a></span></label>
+          <a class="link" href="#" id="forgotPwd">忘记密码？</a>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">登 录</button>
+        <button class="btn btn-ghost btn-block register-btn" type="button" id="registerBtn">注册账号 · 权益开通</button>
+      </form>
+      <div class="demo-entry">
+        <div class="demo-title">快速体验 · 演示账号</div>
+        <div class="demo-cards">
+          <button class="demo-card" data-demo="partner">
+            <span class="demo-badge gold">已入驻</span>
+            <b>金牌合伙人 · 张明远</b>
+            <small>直接进入后台，查看完整权益与收益数据</small>
+          </button>
+          <button class="demo-card" data-demo="new">
+            <span class="demo-badge">未入驻</span>
+            <b>新用户 · 申请成为合伙人</b>
+            <small>从身份选择开始，完整走一遍加盟流程</small>
+          </button>
+        </div>
+      </div>
+      <div class="auth-tip">还没有账号？点击「注册账号」从身份选择开始，完整走一遍加盟流程</div>
+      <div id="loginAnnot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 身份选择 / 加盟 ============ -->
+<div id="onboardingPage" class="page-onboard hide">
+  <header class="ob-header">
+    <div class="ob-brand"><div class="brand-mark sm">民</div><b>民匠有约</b><span class="sep"></span><span>合伙人加盟中心</span></div>
+    <div class="ob-steps" id="obSteps"></div>
+    <button class="btn-text" id="obLogout">已有账号，返回登录</button>
+  </header>
+  <main id="obBody" class="ob-body"></main>
+  <footer class="ob-footer" id="obFooter"></footer>
+</div>
+
+<!-- ============ 后台主体 ============ -->
+<div id="consolePage" class="page-console hide">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-brand"><div class="brand-mark sm">民</div><div class="sb-brand-txt"><b>民匠有约</b><span>合伙人管理后台</span></div></div>
+    <div class="sb-identity" id="sbIdentity"></div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-foot">
+      <div class="sb-support"><span class="dot-live"></span>总部管家在线 · 工作日 9:00-18:00</div>
+      <button class="btn-text" id="replayOnboard">↺ 重走加盟流程</button>
+    </div>
+  </aside>
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="tb-left"><button class="icon-btn" id="menuToggle" title="收起/展开">☰</button><div class="crumb" id="crumb"></div></div>
+      <div class="tb-right">
+        <div class="tb-search"><i class="ico ico-search"></i><input id="globalSearch" placeholder="搜索订单 / 客户 / 收益单号"></div>
+        <button class="icon-btn annot-switch" id="annotToggle" data-act="toggleAnnot" title="显示 / 隐藏页面注解">注</button>
+        <button class="icon-btn bell" id="msgBtn" title="消息通知">🔔<span class="badge" id="msgBadge">3</span></button>
+        <div class="tb-user" id="tbUser"></div>
+      </div>
+    </header>
+    <div class="view-scroll"><div id="view" class="view"></div></div>
+  </div>
+</div>
+
+<!-- 抽屉 / 弹窗 / 提示 -->
+<div id="drawerMask" class="mask hide"></div>
+<div id="drawer" class="drawer hide"></div>
+<div id="modalMask" class="mask modal-mask hide"></div>
+<div id="modal" class="modal hide"></div>
+<div id="toast" class="toast hide"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/annotations.js"></script>
+<script src="assets/pages.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
