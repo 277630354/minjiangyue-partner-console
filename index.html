@@ -103,6 +103,7 @@
       <div class="tb-right">
         <div class="tb-search"><i class="ico ico-search"></i><input id="globalSearch" placeholder="搜索订单 / 客户 / 收益单号"></div>
         <button class="icon-btn annot-switch" id="annotToggle" data-act="toggleAnnot" title="显示 / 隐藏页面注解">注</button>
+        <button class="icon-btn edit-switch" id="editToggle" data-act="toggleEdit" title="编辑模式：修改任意文字并写入源码">✎</button>
         <button class="icon-btn bell" id="msgBtn" title="消息通知">🔔<span class="badge" id="msgBadge">3</span></button>
         <div class="tb-user" id="tbUser"></div>
       </div>
@@ -117,7 +118,15 @@
 <div id="modalMask" class="mask modal-mask hide"></div>
 <div id="modal" class="modal hide"></div>
 <div id="toast" class="toast hide"></div>
+<div id="editBar" class="edit-bar hide">
+  <span class="eb-title">✎ 编辑模式</span>
+  <span class="eb-tip">直接点击页面上的文字即可修改，保存后写回源码</span>
+  <button class="btn btn-ghost btn-sm" data-act="resetEdits">恢复默认</button>
+  <button class="btn btn-primary btn-sm" data-act="saveEdits">保存并写入源码</button>
+  <button class="btn btn-soft btn-sm" data-act="exitEdit">退出编辑</button>
+</div>
 
+<script src="assets/text-edits.js"></script>
 <script src="assets/data.js"></script>
 <script src="assets/annotations.js"></script>
 <script src="assets/pages.js"></script>

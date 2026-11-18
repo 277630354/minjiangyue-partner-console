@@ -163,10 +163,11 @@ const NAV=[
   { group:'权益与成长', items:[ {k:'benefits',t:'我的权益',i:'◆'}, {k:'upgrade',t:'晋升中心',i:'↑'}, {k:'team',t:'团队与邀请',i:'◎'} ] },
   { group:'收益中心', items:[ {k:'income',t:'我的收益',i:'¥'}, {k:'sources',t:'收益来源',i:'⊞'}, {k:'stats',t:'收益统计',i:'▤'}, {k:'settlement',t:'结算与提现',i:'⇄'} ] },
   { group:'业务管理', items:[ {k:'orders',t:'席位订单',i:'▣'} ] },
-  { group:'支持与设置', items:[ {k:'rules',t:'政策与规则',i:'文'}, {k:'settings',t:'账户设置',i:'⚙'} ] }
+  { group:'支持与设置', items:[ {k:'rules',t:'政策与规则',i:'文'}, {k:'settings',t:'账户设置',i:'⚙'} ] },
+  { group:'权益架构图', items:[ {k:'equityMap',t:'权益架构图',i:'◇'} ] }
 ];
-const TITLES={dashboard:'工作台',messages:'消息中心',benefits:'我的权益',upgrade:'晋升中心',team:'团队与邀请',income:'我的收益',sources:'收益来源',stats:'收益统计',settlement:'结算与提现',orders:'席位订单',rules:'政策与规则',settings:'账户设置'};
-const SUBTITLES={dashboard:'权益、收益与经营情况一屏掌握',income:'账单明细、结算状态与提现',sources:'每笔收益从哪来，按什么口径算',stats:'多维度趋势、结构与对比分析',benefits:'等级权益、分润规则与增值包',upgrade:'免费晋升与补差价晋升双通道',team:'一级绑定关系与团队业绩看板',orders:'客户席位、基准日与分润快照',settlement:'账单周期、自动结算与提现流水',rules:'2026 综合版政策全文口径与常见问题',messages:'结算、政策、团队与审核通知',settings:'主体资料、结算账户与身份切换'};
+const TITLES={dashboard:'工作台',messages:'消息中心',benefits:'我的权益',upgrade:'晋升中心',team:'团队与邀请',income:'我的收益',sources:'收益来源',stats:'收益统计',settlement:'结算与提现',orders:'席位订单',rules:'政策与规则',equityMap:'权益架构图',settings:'账户设置'};
+const SUBTITLES={dashboard:'权益、收益与经营情况一屏掌握',income:'账单明细、结算状态与提现',sources:'每笔收益从哪来，按什么口径算',stats:'多维度趋势、结构与对比分析',benefits:'等级权益、分润规则与增值包',upgrade:'免费晋升与补差价晋升双通道',team:'一级绑定关系与团队业绩看板',orders:'客户席位、基准日与分润快照',settlement:'账单周期、自动结算与提现流水',rules:'2026 综合版政策全文口径与常见问题',equityMap:'城市合伙人及服务商权益体系一图总览',messages:'结算、政策、团队与审核通知',settings:'主体资料、结算账户与身份切换'};
 
 /* ---------------- App ---------------- */
 const App = {
@@ -174,7 +175,8 @@ const App = {
     logged:false, onboarded:true, accountKey:'gold', route:'dashboard',
     obStep:0, obData:{ identity:'partner', level:'gold', subject:'企业', pay:'对公转账', form:{} },
     custom:null, filters:{source:'',status:'',period:'',kw:''}, page:1,
-    withdrawals:[], readNotices:[], chartMode:'line', statRange:12, annotOn:true, obReturn:'login'
+    withdrawals:[], readNotices:[], chartMode:'line', statRange:12, annotOn:true, obReturn:'login',
+    editMode:false, textEdits:{}
   },
 
   init(){
@@ -197,6 +199,14 @@ const App = {
       const s=JSON.parse(localStorage.getItem('mjyy_state')||'{}');
       Object.assign(this.state, s, {logged:false});
     }catch(e){}
+    /* 文案覆盖：优先源码内置，其次本地保存 */
+    const builtin=(window.MJYY_TEXT_EDITS&&Object.keys(window.MJYY_TEXT_EDITS).length)?window.MJYY_TEXT_EDITS:null;
+    let local=null;
+    try{ local=JSON.parse(localStorage.getItem('mjyy_text_edits')||'null'); }catch(e){}
+    const edits=Object.assign({},builtin||{},local||{});
+    Object.keys(edits).forEach(k=>{ if(!edits[k]) delete edits[k]; });
+    this.state.textEdits=edits;
+    this.state.editMode=false;
   },
   save(){
     const s=JSON.parse(JSON.stringify(this.state));
@@ -504,9 +514,114 @@ const App = {
     $('#view').innerHTML='<div class="page-head"><div><h2>'+TITLES[r]+'</h2><p>'+sub+'</p></div>'+(page.head?page.head(a,this.state):'')+'</div>'+
       (this.state.annotOn?U.annotBar(annotKey):'')+page.html(a,this.state);
     if(page.bind) page.bind(a,this.state);
+    this.applyTextEdits();
     const vs=$('.view-scroll'); if(vs) vs.scrollTop=0;
   },
   go(r){ this.state.route=r; this.state.page=1; location.hash='#/'+r; this.render(); },
+
+  /* --- 编辑模式：任意文案可改，保存后写回源码 --- */
+  applyTextEdits(){
+    /* 用文本节点遍历做原文→新文替换，避免 innerHTML 破坏结构与事件 */
+    const edits=this.state.textEdits||{}, src=Object.keys(edits);
+    if(!src.length) return;
+    const w=document.createTreeWalker($('#view'),NodeFilter.SHOW_TEXT,null,false);
+    const hits=[]; let n;
+    while((n=w.nextNode())){
+      const t=n.nodeValue.trim();
+      if(edits[t]!==undefined && edits[t]!==t) hits.push([n,edits[t],t]);
+    }
+    hits.forEach(([node,val,orig])=>{
+      const s=document.createElement('span'); s.className='tx-applied'; s.dataset.txFrom=orig;
+      s.textContent=val; node.parentNode.replaceChild(s,node);
+    });
+  },
+  toggleEdit(){
+    this.state.editMode=!this.state.editMode;
+    const bar=$('#editBar'), btn=$('#editToggle');
+    if(bar) bar.classList.toggle('hide',!this.state.editMode);
+    if(btn) btn.classList.toggle('on',!!this.state.editMode);
+    document.body.classList.toggle('edit-mode',!!this.state.editMode);
+    if(this.state.editMode){
+      this.bindInlineEdit();
+      this.save();
+      U.toast('编辑模式已开启：点击页面文字即可修改');
+    }else{
+      this.save(); this.render();
+      U.toast('已退出编辑模式');
+    }
+  },
+  bindInlineEdit(){
+    /* 逐个文本节点设为可编辑，避免整体 contenteditable 破坏交互 */
+    const walk=document.createTreeWalker($('#view'),NodeFilter.SHOW_TEXT,null,false);
+    const nodes=[]; let n;
+    while((n=walk.nextNode())){
+      const t=n.nodeValue.trim();
+      if(!t||n.parentElement.closest('.annot-bar,.annot-main,.annot-peek,.edit-bar')) continue;
+      if(n.parentElement.closest('script,style,input,button')) continue;
+      nodes.push(n);
+    }
+    nodes.forEach(n=>{
+      const s=document.createElement('span');
+      s.className='tx-edit'; s.setAttribute('contenteditable','true'); s.setAttribute('spellcheck','false');
+      s.dataset.tx=n.nodeValue.trim();
+      n.parentNode.insertBefore(s,n); s.appendChild(n);
+    });
+  },
+  saveEdits(){
+    const edits=this.state.textEdits||(this.state.textEdits={});
+    let count=0;
+    $$('#view .tx-edit').forEach(s=>{
+      const now=s.textContent.trim(), key=s.dataset.tx;
+      if(now&&now!==key){ edits[key]=now; count++; }
+    });
+    this.save();
+    if(!count){ U.toast('没有检测到改动'); return; }
+    U.toast('已保存 '+count+' 处改动，正在生成源码文件');
+    setTimeout(()=>this.exportSource(),400);
+  },
+  resetEdits(){
+    if(!confirm('确定恢复全部默认文案？本地保存的改动将被清除。')) return;
+    this.state.textEdits={}; this.save(); this.render();
+    this.bindInlineEdit(); U.toast('已恢复默认文案');
+  },
+  exitEdit(){ this.toggleEdit(); },
+  exportSource(){
+    /* 把当前 DOM 的文案改动固化成一份新的单文件 HTML 供下载 */
+    const edits=this.state.textEdits||{};
+    const doc=document.documentElement.cloneNode(true);
+    const body=doc.querySelector('body');
+    if(body){
+      Array.prototype.slice.call(body.querySelectorAll('.tx-edit')).forEach(s=>{ s.removeAttribute('contenteditable'); s.removeAttribute('spellcheck'); s.removeAttribute('data-tx'); s.classList.remove('tx-edit'); });
+      const bar=body.querySelector('#editBar'); if(bar) bar.remove();
+      body.classList.remove('edit-mode');
+    }
+    /* 只替换「文案覆盖表」脚本块：以 MJYY_TEXT_EDITS_DATA 标记识别，绝不触碰主程序 */
+    const scripts=Array.prototype.slice.call(doc.querySelectorAll('script'));
+    let patched=false;
+    scripts.forEach(sc=>{
+      if(!patched && !sc.src && sc.textContent && sc.textContent.indexOf('MJYY_TEXT_EDITS_DATA')>=0){
+        sc.textContent='/* MJYY_TEXT_EDITS_DATA */ window.MJYY_TEXT_EDITS='+JSON.stringify(edits,null,2)+';';
+        patched=true;
+      }
+    });
+    /* 若这个版本没有独立覆盖表脚本（如旧单文件版），在 head 里插入一份 */
+    if(!patched){
+      const head=doc.querySelector('head');
+      const sc=doc.createElement('script');
+      sc.textContent='/* MJYY_TEXT_EDITS_DATA */ window.MJYY_TEXT_EDITS='+JSON.stringify(edits,null,2)+';';
+      if(head) head.appendChild(sc);
+    }
+    let html='<!DOCTYPE html>\n'+doc.outerHTML;
+    /* 运行期 localStorage 覆盖也写入，保证替换原文件后长期生效 */
+    const ls='<script>try{localStorage.setItem("mjyy_text_edits",'+JSON.stringify(JSON.stringify(edits))+');}catch(e){}<\/script>';
+    html=html.replace('</head>',()=>ls+'\n</head>');
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='民匠有约合伙人后台管理系统.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    U.toast('源码文件已生成并下载，请用它替换原 HTML');
+  },
 
   /* --- 页面注解 --- */
   openAnnot(key){
@@ -614,6 +729,8 @@ const App = {
       case 'withdraw': this.withdrawModal(); return false;
       case 'doWithdraw': this.doWithdraw(); return false;
       case 'copyInvite': U.copy('MJYY-'+this.account().id); return false;
+      case 'copyLinkPartner': U.copy('https://partner.minjiangyue.com/i/MJYY-'+this.account().id); return false;
+      case 'copyLinkCompany': U.copy('https://corp.minjiangyue.com/i/MJYY-'+this.account().id); return false;
       case 'copyLink': U.copy('https://partner.minjiangyue.com/i/MJYY-'+this.account().id); return false;
       case 'recordDetail': this.recordDetail(v); return false;
       case 'advisorDetail': this.advisorDetail(v); return false;
@@ -632,6 +749,10 @@ const App = {
       case 'toast': U.toast(v); return false;
       case 'openAnnot': this.openAnnot(v); return false;
       case 'toggleAnnot': this.toggleAnnot(); return false;
+      case 'toggleEdit': this.toggleEdit(); return false;
+      case 'saveEdits': this.saveEdits(); return false;
+      case 'resetEdits': this.resetEdits(); return false;
+      case 'exitEdit': this.exitEdit(); return false;
       case 'noop': return false;
       default: if(window.PAGES._handle) return window.PAGES._handle(act,v,t,e,this);
     }
@@ -666,15 +787,16 @@ const App = {
     if(a.level==='advisorService') return this.advisorDetail(id);
     const r=a.records.find(x=>x.id===id); if(!r)return;
     const s=U.src(r.source);
+    const renewDash=(a.level==='gold'||a.level==='bronze')&&r.source==='renew_seat';
     U.drawer('收益明细 · '+r.id,
-      '<div class="card" style="box-shadow:none"><div class="card-bd"><div class="small muted">收益金额</div><div class="money" style="color:var(--brand);margin:6px 0 14px">'+U.fmt(r.amount)+'</div>'+U.tag(r.status)+'</div></div>'+
+      '<div class="card" style="box-shadow:none"><div class="card-bd"><div class="small muted">收益金额</div><div class="money" style="color:var(--brand);margin:6px 0 14px">'+U.fmt(r.amount)+'</div>'+(renewDash?'<span class="muted">-</span>':U.tag(r.status))+'</div></div>'+
       '<div class="section-title">基本信息</div>'+
       '<div class="kv"><span>收益来源</span><b>'+s.name+'</b></div><div class="kv"><span>发生日期</span><b>'+r.date+'</b></div>'+
       '<div class="kv"><span>关联产品</span><b>'+r.product+'</b></div><div class="kv"><span>客户 / 对象</span><b>'+U.esc(r.customer)+'</b></div>'+
-      '<div class="kv"><span>新增席位</span><b>'+(r.newSeats||0)+' 席</b></div><div class="kv"><span>续费席位</span><b>'+(r.renewSeats||0)+' 席</b></div><div class="kv"><span>结算日</span><b>'+r.settle+'</b></div>'+
+      '<div class="kv"><span>新增席位</span><b>'+(r.newSeats||0)+' 席</b></div><div class="kv"><span>续费席位</span><b>'+(r.renewSeats||0)+' 席</b></div><div class="kv"><span>结算日</span><b>'+(renewDash?'次月 25 日自动结算（不包含续费分润）':r.settle)+'</b></div>'+
       '<div class="section-title">计算口径</div><div class="notice"><span class="ni">ƒ</span><div><b>'+U.esc(r.note)+'</b><br>'+s.desc+'</div></div>'+
       '<div class="section-title">状态流转</div><div class="timeline">'+
-      P.statusFlow.map((st,i)=>{const idx=P.statusFlow.indexOf(r.status);return '<div class="tl-item '+(i<=idx?'done':'')+'"><b>'+st+'</b><p>'+(i<=idx?'已完成':'待进入')+(i===0?' · 次月 1 日出账单':'')+(i===2?' · 次月 25 日自动结算':'')+'</p></div>';}).join('')+'</div>',
+      P.statusFlow.map((st,i)=>{const idx=P.statusFlow.indexOf(r.status);return '<div class="tl-item '+(renewDash||i<=idx?'done':'')+'"><b>'+st+'</b><p>'+(renewDash?'不适用 · 续费分润不参与自动结算':(i<=idx?'已完成':'待进入')+(i===0?' · 次月 1 日出账单':'')+(i===2?' · 次月 25 日自动结算':''))+'</p></div>';}).join('')+'</div>',
       '<button class="btn btn-ghost" data-act="closeDrawer">关闭</button><button class="btn btn-primary" data-act="toast" data-v="已发起对账申请，总部管家将在 1 个工作日内响应">发起对账</button>');
   },
   advisorDetail(v){
@@ -781,8 +903,10 @@ const App = {
             a.records.map(r=>[r.id,r.date,U.src(r.source).name,r.customer,r.product,r.newSeats||0,r.renewSeats||0,r.amount,r.status,r.settle,r.note]));
         }
       } else {
+        const rd=(a.level==='gold'||a.level==='bronze');
         U.csv('收益明细_'+a.id+'.csv',['收益单号','日期','收益来源','产品','客户/对象','新增席位','续费席位','金额(元)','状态','结算日','计算口径'],
-          a.records.map(r=>[r.id,r.date,U.src(r.source).name,r.product,r.customer,r.newSeats||0,r.renewSeats||0,r.amount,r.status,r.settle,r.note]));
+          a.records.map(r=>[r.id,r.date,U.src(r.source).name,r.product,r.customer,r.newSeats||0,r.renewSeats||0,r.amount,
+            (rd&&r.source==='renew_seat')?'-':r.status,(rd&&r.source==='renew_seat')?'次月 25 日自动结算（不包含续费分润）':r.settle,r.note]));
       }
     } else if(kind==='orders'){
       U.csv('席位订单_'+a.id+'.csv',['订单号','客户','产品','席位','类型','首购基准日','业绩年度','订单金额(元)','状态'],

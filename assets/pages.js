@@ -120,6 +120,11 @@ PAGES.dashboard={
 
 /* ==================== 我的收益 ==================== */
 function incomeHtml(a,st){
+    /* 金牌合伙人与在职员工·铜牌权益：续费分润按年结算、不参与按月自动结算 */
+    const renewDash=(a.level==='gold'||a.level==='bronze');
+    const settleText=renewDash?'次月 25 日自动结算（不包含续费分润）':'次月 25 日自动结算';
+    const pendingMonth=renewDash?U.sum(a.records,r=>r.status!=='已结算'&&r.source!=='renew_seat'):null;
+    const pendingYear=renewDash?U.sum(a.records,r=>r.status!=='已结算'&&r.source==='renew_seat'):null;
     const f=st.filters;
     let rows=a.records.filter(r=>
       (!f.source||r.source===f.source)&&(!f.status||r.status===f.status)&&
@@ -128,10 +133,17 @@ function incomeHtml(a,st){
     const filteredTotal=U.sum(rows), per=10, pages=Math.max(1,Math.ceil(rows.length/per)), pg=Math.min(st.page,pages);
     const shown=rows.slice((pg-1)*per,pg*per);
     const monthOpts=Array.from(new Set(a.records.map(r=>r.date.slice(0,7)))).sort().reverse().map(m=>[m,m]);
-    return '<div class="grid g4">'+statCard('账本累计收益',fmt(ledger(a)),'共 '+a.records.length+' 笔收益记录')+
-      statCard('已结算',fmt(settled(a)),'可发起提现','green')+
-      statCard('待结算 / 账单中',fmt(pending(a)),'次月 25 日自动结算','gold')+
-      statCard('可提现余额',fmt(avail(a)),'已提现 '+fmt(App.state.withdrawals.reduce((s,w)=>s+w.amount,0)),'purple')+'</div>'+
+    const cards=renewDash
+      ? '<div class="grid g5">'+statCard('账本累计收益',fmt(ledger(a)),'共 '+a.records.length+' 笔收益记录')+
+        statCard('已结算',fmt(settled(a)),'可发起提现','green')+
+        statCard('按月待结算',fmt(pendingMonth),'次月 25 日自动结算','gold')+
+        statCard('按年待结算',fmt(pendingYear),'续费分润 · 次年 1 月结算','orange')+
+        statCard('可提现余额',fmt(avail(a)),'已提现 '+fmt(App.state.withdrawals.reduce((s,w)=>s+w.amount,0)),'purple')+'</div>'
+      : '<div class="grid g4">'+statCard('账本累计收益',fmt(ledger(a)),'共 '+a.records.length+' 笔收益记录')+
+        statCard('已结算',fmt(settled(a)),'可发起提现','green')+
+        statCard('待结算 / 账单中',fmt(pending(a)),settleText,'gold')+
+        statCard('可提现余额',fmt(avail(a)),'已提现 '+fmt(App.state.withdrawals.reduce((s,w)=>s+w.amount,0)),'purple')+'</div>';
+    return cards+
 
     '<div class="section-title mt24">账期账单</div>'+
     '<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>账期</th><th>收益笔数</th><th>账单金额</th><th>出账日</th><th>自动结算日</th><th>状态</th><th class="right">操作</th></tr></thead><tbody>'+
@@ -149,11 +161,11 @@ function incomeHtml(a,st){
         '<span class="small muted" style="margin-left:auto">共 '+rows.length+' 笔 · 合计 <b style="color:var(--brand)">'+fmt(filteredTotal)+'</b></span>'+
       '</div>'+
       pageTable(['收益单号','日期','收益来源','产品','客户 / 对象','新增席位','续费席位','金额','状态','操作'],
-        shown.map(r=>'<tr style="cursor:pointer" data-act="recordDetail" data-v="'+r.id+'"><td><b>'+r.id+'</b></td><td>'+r.date+'</td><td><span class="tag" style="background:'+U.src(r.source).color+'18;color:'+U.src(r.source).color+'">'+U.src(r.source).name+'</span></td><td>'+r.product+'</td><td>'+esc(r.customer)+'</td><td class="num">'+(r.newSeats||0)+'</td><td class="num">'+(r.renewSeats||0)+'</td><td><b class="num">'+fmt(r.amount)+'</b></td><td>'+U.tag(r.status)+'</td><td><button class="btn-text">详情 ›</button></td></tr>'),'没有符合条件的收益记录')+
+        shown.map(r=>'<tr style="cursor:pointer" data-act="recordDetail" data-v="'+r.id+'"><td><b>'+r.id+'</b></td><td>'+r.date+'</td><td><span class="tag" style="background:'+U.src(r.source).color+'18;color:'+U.src(r.source).color+'">'+U.src(r.source).name+'</span></td><td>'+r.product+'</td><td>'+esc(r.customer)+'</td><td class="num">'+(r.newSeats||0)+'</td><td class="num">'+(r.renewSeats||0)+'</td><td><b class="num">'+fmt(r.amount)+'</b></td><td>'+((renewDash&&r.source==='renew_seat')?'<span class="muted">-</span>':U.tag(r.status))+'</td><td><button class="btn-text">详情 ›</button></td></tr>'),'没有符合条件的收益记录')+
       '<div class="pager"><span>第 '+pg+' / '+pages+' 页</span><div class="pg">'+
         Array.from({length:pages},(_,i)=>'<button class="'+(i+1===pg?'active':'')+'" data-act="page" data-v="'+(i+1)+'">'+(i+1)+'</button>').join('')+'</div></div>'+
     '</div></div>'+
-    '<div class="notice mt14"><span class="ni">ℹ</span><div><b>结算口径：</b>次月 1 日出账单、次月 25 日系统自动结算；账单中 → 待结算 → 已结算。'+P.meta.invoiceRule+'。所有佣金、奖励系统自动结算，无需线下对账。</div></div>';
+    '<div class="notice mt14"><span class="ni">ℹ</span><div><b>结算口径：</b>次月 1 日出账单、'+(renewDash?'次月 25 日自动结算（不包含续费分润）；续费分润不参与自动结算，状态以「-」标记。':'次月 25 日系统自动结算；')+'账单中 → 待结算 → 已结算。'+P.meta.invoiceRule+'。所有佣金、奖励系统自动结算，无需线下对账。</div></div>';
 }
 
 /* ==================== 我的收益：按账号角色直接展示对应账本 ==================== */
@@ -408,14 +420,21 @@ PAGES.upgrade={
 PAGES.team={
   head(a){ return '<button class="btn btn-ghost btn-sm" data-act="export" data-v="team">导出团队看板</button>'; },
   html(a){
-    const invite='MJYY-'+a.id, link='https://partner.minjiangyue.com/i/'+invite;
+    const invite='MJYY-'+a.id;
+    const linkPartner='https://partner.minjiangyue.com/i/'+invite;
+    const linkCompany='https://corp.minjiangyue.com/i/'+invite;
     const teamSeats=a.team.reduce((s,t)=>s+t.seats,0), teamAmount=a.team.reduce((s,t)=>s+t.amount,0);
     return '<div class="grid g2" style="grid-template-columns:1fr 1.6fr">'+
       '<div class="card">'+cardHead('我的专属邀请码','拉新绑定入口')+'<div class="card-bd">'+
         '<div class="row" style="gap:18px;align-items:flex-start">'+U.qr(a.id.length*137)+
         '<div style="flex:1"><div class="small muted">邀请码</div><div style="font-size:20px;font-weight:800;letter-spacing:1px;color:var(--brand);margin:2px 0 10px">'+invite+'</div>'+
-        '<div class="small muted">邀请链接</div><div class="small" style="word-break:break-all;color:var(--text-2);margin-bottom:12px">'+link+'</div>'+
-        '<div class="row wrap"><button class="btn btn-primary btn-sm" data-act="copyInvite">复制邀请码</button><button class="btn btn-ghost btn-sm" data-act="copyLink">复制链接</button></div></div></div>'+
+        '<div class="small muted mt10">合伙人管理后台链接</div>'+
+        '<div class="small" style="word-break:break-all;color:var(--text-2);margin:2px 0 5px">'+linkPartner+'</div>'+
+        '<button class="btn btn-ghost btn-sm" data-act="copyLinkPartner">复制合伙人后台链接</button>'+
+        '<div class="small muted mt10">企业后台链接</div>'+
+        '<div class="small" style="word-break:break-all;color:var(--text-2);margin:2px 0 5px">'+linkCompany+'</div>'+
+        '<button class="btn btn-ghost btn-sm" data-act="copyLinkCompany">复制企业后台链接</button>'+
+        '<div class="row wrap mt12"><button class="btn btn-primary btn-sm" data-act="copyInvite">复制邀请码</button></div></div></div>'+
         '<div class="notice mt14"><span class="ni">ℹ</span><div>客户或新合伙人通过邀请码注册/下单即自动建立推荐—被推荐关系；分销层级限定两级，超出两级不再产生分佣。</div></div>'+
       '</div></div>'+
       '<div><div class="grid g2">'+statCard('一级绑定合伙人',a.teamCount+' <small style="font-size:13px;font-weight:500">位</small>','金 '+a.team.filter(t=>t.level==='金牌合伙人').length+' · 银 '+a.team.filter(t=>t.level==='银牌合伙人').length+' · 铜 '+a.team.filter(t=>t.level==='铜牌合伙人').length)+
@@ -470,21 +489,32 @@ PAGES.settlement={
   head(a){ return '<div class="row"><button class="btn btn-ghost btn-sm" data-act="export" data-v="bill">导出账单</button><button class="btn btn-primary btn-sm" data-act="withdraw">申请提现</button></div>'; },
   html(a){
     const wds=App.state.withdrawals;
-    return '<div class="grid g4">'+statCard('可提现余额',fmt(avail(a)),'已结算收益扣减已提现','green')+
-      statCard('本期账单',fmt(a.bills[0].amount),'2026-10 账期 · 待结算','gold')+
-      statCard('自动结算日','11 月 25 日','次月 1 日出账单')+
-      statCard('提现申请',wds.length+' <small style="font-size:13px;font-weight:500">笔</small>','审核中 '+wds.filter(w=>w.status==='审核中').length+' 笔','purple')+'</div>'+
+    const yearSplit=(a.level==='gold'||a.level==='bronze');
+    const topCards=yearSplit
+      ? '<div class="grid g5">'+statCard('可提现余额',fmt(avail(a)),'已结算收益扣减已提现','green')+
+        statCard('本期账单',fmt(a.bills[0].amount),'2026-10 账期 · 待结算','gold')+
+        statCard('自动结算日','11 月 25 日','次月 1 日出账单 · 不含续费')+
+        statCard('续费自动结算日','次年 1 月 25 日','续费分润按年结算','orange')+
+        statCard('提现申请',wds.length+' <small style="font-size:13px;font-weight:500">笔</small>','审核中 '+wds.filter(w=>w.status==='审核中').length+' 笔','purple')+'</div>'
+      : '<div class="grid g4">'+statCard('可提现余额',fmt(avail(a)),'已结算收益扣减已提现','green')+
+        statCard('本期账单',fmt(a.bills[0].amount),'2026-10 账期 · 待结算','gold')+
+        statCard('自动结算日','11 月 25 日','次月 1 日出账单')+
+        statCard('提现申请',wds.length+' <small style="font-size:13px;font-weight:500">笔</small>','审核中 '+wds.filter(w=>w.status==='审核中').length+' 笔','purple')+'</div>';
+    return topCards+
 
     '<div class="grid g2 mt18" style="grid-template-columns:1fr 1.3fr">'+
-      '<div class="card">'+cardHead('结算周期','系统自动结算')+'<div class="card-bd"><div class="timeline">'+
+      '<div class="card">'+cardHead('结算周期',yearSplit?'按月 + 按年双周期':'系统自动结算')+'<div class="card-bd"><div class="timeline">'+
         '<div class="tl-item done"><b>业务发生</b><p>订单成交 / 推荐落地，系统按等级规则生成收益单与分润快照</p></div>'+
-        '<div class="tl-item done"><b>次月 1 日 · 出账单</b><p>汇总上月全部收益，生成账单，合伙人可在线核对</p></div>'+
-        '<div class="tl-item"><b>次月 25 日 · 自动结算</b><p>系统自动结算至账户，无需线下对账</p></div>'+
+        '<div class="tl-item done"><b>次月 1 日 · 出账单</b><p>汇总上月收益（不含续费分润），生成账单，合伙人可在线核对</p></div>'+
+        '<div class="tl-item"><b>次月 25 日 · 自动结算</b><p>按月项目自动结算至账户：新增席位佣金、推荐奖励、席位成交奖金（新增）等</p></div>'+
+        (yearSplit?'<div class="tl-item"><b>次年 1 月 25 日 · 续费按年结算</b><p>续费分润按年结算：次年 1 月 1 日出账、1 月 25 日结算，首页「按年待结算」可查；席位成交奖金（续费）同口径</p></div>':'')+
         '<div class="tl-item"><b>发票 / 开票校验</b><p>'+P.meta.invoiceRule+'</p></div>'+
         '<div class="tl-item"><b>提现打款</b><p>财务审核通过后打款至绑定结算账户</p></div>'+
       '</div></div></div>'+
-      '<div><div class="card">'+cardHead('结算项目与时间','补充说明第 6 条')+'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>业务类型</th><th>出账时间</th><th>结算时间</th></tr></thead><tbody>'+
-        P.settlementItems.map(x=>'<tr><td>'+x.type+'</td><td>'+x.bill+'</td><td><b>'+x.pay+'</b></td></tr>').join('')+'</tbody></table></div></div>'+
+      '<div><div class="card">'+cardHead('结算项目与时间',yearSplit?'续费分润按年结算':'补充说明第 6 条')+'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>业务类型</th><th>出账时间</th><th>结算时间</th><th>周期</th></tr></thead><tbody>'+
+        (yearSplit
+          ? P.settlementSplit.map(x=>'<tr'+(x.cycle==='年'?' style="background:#FFF8EC"':'')+'><td>'+x.type+'</td><td>'+x.bill+'</td><td><b>'+x.pay+'</b></td><td><span class="tag '+(x.cycle==='年'?'tag-orange':'tag-blue')+'">按'+x.cycle+'</span></td></tr>').join('')
+          : P.settlementItems.map(x=>'<tr><td>'+x.type+'</td><td>'+x.bill+'</td><td><b>'+x.pay+'</b></td><td><span class="tag tag-blue">按月</span></td></tr>').join(''))+'</tbody></table></div></div>'+
         '<div class="card mt18">'+cardHead('账期账单','最近 4 期')+'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>账期</th><th>笔数</th><th>金额</th><th>结算日</th><th>状态</th></tr></thead><tbody>'+
         a.bills.map(b=>'<tr><td><b>'+b.period+'</b></td><td>'+b.count+'</td><td class="num"><b>'+fmt(b.amount)+'</b></td><td>'+b.payDate+'</td><td>'+U.tag(b.status)+'</td></tr>').join('')+'</tbody></table></div></div>'+
       '</div></div></div>'+
@@ -492,9 +522,83 @@ PAGES.settlement={
     '<div class="section-title mt24">提现记录</div>'+
     '<div class="card">'+pageTable(['申请日期','提现金额','结算账户','发票 / 开票','状态'],
       wds.map(w=>'<tr><td>'+w.date+'</td><td class="num"><b>'+fmt(w.amount)+'</b></td><td>'+esc(w.bank)+'</td><td>'+(U.isCorp(a.subject)?'增值税发票已上传':'系统自动开票')+'</td><td>'+U.tag(w.status)+'</td></tr>'),'暂无提现记录，点击右上角「申请提现」发起')+'</div></div>'+
-    '<div class="notice mt14"><span class="ni">ℹ</span><div>'+P.meta.settlement.note+'。<b>退费口径：</b>政策未明确中途退出的代理费退还与已售席位分润处理，系统预留「退出/退费申请」入口，提交后进入总部人工审核，已结算收益不回滚、未结算账单冻结待审，最终以双方签署的渠道合作协议为准。</div></div>';
+    '<div class="notice mt14"><span class="ni">ℹ</span><div>'+P.meta.settlement.note+(yearSplit?'。<b>续费按年口径：</b>续费分润与席位成交奖金（续费）不参与按月自动结算，次年 1 月 1 日出账、1 月 25 日结算；按月账单与待结算统计均不含续费分润。':'')+'。<b>退费口径：</b>政策未明确中途退出的代理费退还与已售席位分润处理，系统预留「退出/退费申请」入口，提交后进入总部人工审核，已结算收益不回滚、未结算账单冻结待审，最终以双方签署的渠道合作协议为准。</div></div>';
   }
 };
+
+/* ==================== 权益架构图（纯文本 · 可选中复制） ==================== */
+PAGES.equityMap={
+  html(){
+    /* em: 一级分支  node: 二级节点  leaf: 三级明细 —— 全部为可选中文本 */
+    return '<div class="card"><div class="card-hd"><h3>城市合伙人及服务商权益体系架构<span class="sub">全链路一图总览 · 文字可选中复制</span></h3>'+
+      '<span class="tag tag-blue">八大身份 · 九个类别</span></div><div class="card-bd">'+
+      '<p class="small muted" style="margin-bottom:14px">金牌合伙人、银牌合伙人、铜牌合伙人、中心城市服务商、地级城市服务商、高级总顾问招募城市服务商、高级总顾问招募城市合伙人、其他顾问、全员营销，八个身份九个类别。</p>'+
+
+      em('01','体系总览',[
+        leaf('城市合伙人（金牌 / 银牌 / 铜牌）→ 城市服务商（中心 / 地级）→ 顾问体系 → 全员营销')
+      ])+
+
+      em('02','合伙人体系 → 权益对比',[
+        node('金牌合伙人',[leaf('代理费 69,800 元 ｜ 安心云首年 350 元/单 ｜ 如意宝首年 240 元/单 ｜ 福运宝 4%~0.4% （一4‰，二2‰，三1.2‰，四0.8‰，五0.4‰）｜续费收益：续费年第一年50%，二30%，三20%，四10% ｜ 活跃度 ≥400 单/年')]),
+        node('银牌合伙人',[leaf('代理费 6,980 元 ｜ 安心云首年 200 元/单 ｜ 如意宝首年 180 元/单 ｜ 福运宝 3%~0.3% （一3‰，二1.5‰，三0.9‰，四0.6‰，五0.3‰）｜续费收益：续费年第一年50%，二30%，三20%，四10% ｜ 活跃度 ≥100 单/年')]),
+        node('铜牌合伙人',[leaf('代理费 0 元 ｜ 安心云首年 130 元/单 ｜ 如意宝首年 130 元/单 ｜ 福运宝 2%~0.2% （一2‰，二1‰，三0.6‰，四0.4‰，五0.2‰）｜ 续费年安心云，如意宝通金银比例｜活跃度 ≥10 单/年')])
+      ])+
+
+      em('03','合伙人晋升通道',[
+        node('铜牌 → 银牌',[leaf('路径一：自身 + 直推团队累计席位 ≥150 个 ｜ 路径二：推荐银牌 2 位 + 金牌 1 位')]),
+        node('银牌 → 金牌',[leaf('路径一：自身 + 直推团队累计席位 ≥300 个 ｜ 路径二：推荐银牌 5 位 + 金牌 2 位')])
+      ])+
+
+      em('04','合伙人推荐奖励机制',[
+        leaf('代理费分成 20% ｜ 被推荐方新增席位收益 5% 分成 ｜ 续费权益：同享 5% 计发')
+      ])+
+
+      em('05','合伙人席位成交奖金',[
+        leaf('金牌：每 1000 席位奖 2 万元（限 4 次）｜ 银牌：每 100 席位奖 2000 元（限 4 次）')
+      ])+
+
+      em('06','城市服务商 → 中心 / 地级对比',[
+        node('中心城市服务商',[leaf('加盟费 50 万元 ｜ 城市：一线城市 / 省会 + 最多 4 副城 ｜ 任务：3 万单')]),
+        node('地级城市服务商',[leaf('加盟费 20 万元 ｜ 城市：地级市排名 100 内 ｜ 任务：1 万单')]),
+        node('分润标准（中心 = 地级）',[leaf('安心云首年 410 元/单、次年起 50% ｜ 如意宝首年 300 元/单、次年起 50% ｜ 福运宝首年 5%、次年起 2.5%')])
+      ])+
+
+      em('07','城市服务商招商奖励',[
+        leaf('推荐中心服务商 5 万元 ｜ 推荐地级服务商 2 万元 ｜ 推荐金牌 13,960 元 ｜ 推荐银牌 1,396 元 ｜ 被推荐方新增和续费席位收益 5% 分成')
+      ])+
+
+      em('08','城市服务商被动收益',[
+        leaf('安心云新席 60 元/席 ｜ 如意宝新席 80 元/席 ｜ 福运宝新席流水 1% ｜ 备注：自主开发不计入')
+      ])+
+
+      em('09','顾问招商奖励',[
+        node('招商城市服务商',[
+          sub('高级总顾问',[leaf('自有资源招商 5% ｜ 直接推荐招商 15% ｜ 转介绍：总顾问 5% + 其他顾问 10%')]),
+          sub('其他顾问',[leaf('推荐成功城市服务商：招商额 10%')])
+        ]),
+        node('招商城市合伙人',[leaf('城市合伙人加盟费 20% 的推荐奖励 ｜ 被推荐方新增和续费席位收益 5% 分成 ｜ 该收益与区域被动收益权益不可同时享受')])
+      ])+
+
+      em('10','全员营销（公司员工）',[
+        leaf('基础权益：铜牌合伙人权益 ｜ 推荐中心服务商 2.5 万元 ｜ 推荐地级服务商 1 万元')
+      ])+
+
+      '</div></div>';
+  }
+};
+function em(no,title,lines){
+  return '<div class="em-block"><div class="em-hd"><span class="em-no">'+no+'</span><b>'+title+'</b></div>'+
+    '<div class="em-bd">'+lines.join('')+'</div></div>';
+}
+function node(title,lines){
+  return '<div class="em-node"><div class="em-node-t">'+title+'</div><div class="em-node-b">'+lines.join('')+'</div></div>';
+}
+function sub(title,lines){
+  return '<div class="em-sub"><div class="em-sub-t">'+title+'</div><div class="em-sub-b">'+lines.join('')+'</div></div>';
+}
+function leaf(text){
+  return '<div class="em-leaf">'+text+'</div>';
+}
 
 /* ==================== 政策与规则 ==================== */
 PAGES.rules={

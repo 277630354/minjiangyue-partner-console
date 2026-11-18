@@ -299,6 +299,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .stat-card.gold:after{background:var(--gold-soft)}
 .stat-card.green:after{background:#E7F6EF}
 .stat-card.purple:after{background:#F0EBFB}
+.stat-card.orange:after{background:#FEF2E3}
 .stat-label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;position:relative;z-index:1}
 .stat-value{font-size:25px;font-weight:800;margin:8px 0 4px;letter-spacing:-.5px;position:relative;z-index:1}
 .stat-foot{font-size:11px;color:var(--muted);position:relative;z-index:1}
@@ -441,3 +442,27 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
   .annot-main{flex-wrap:wrap}.annot-ops{width:100%;justify-content:flex-end}
   .annot-peek{padding-left:16px}
 }
+/* 权益架构图 · 纯文本导图 */
+.em-block{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line-2)}
+.em-block:last-child{border-bottom:none;padding-bottom:4px}
+.em-hd{flex:0 0 210px;display:flex;align-items:flex-start;gap:8px;padding-top:2px}
+.em-no{flex:0 0 auto;min-width:26px;height:22px;line-height:22px;text-align:center;border-radius:6px;background:var(--brand-soft);color:var(--brand);font-size:11px;font-weight:700}
+.em-hd b{font-size:13px;color:var(--text);line-height:22px}
+.em-bd{flex:1;min-width:0}
+.em-node{margin-bottom:9px;padding-left:12px;border-left:2px solid var(--line)}
+.em-node:last-child{margin-bottom:0}
+.em-node-t,.em-sub-t{font-size:12.5px;font-weight:700;color:var(--brand);margin-bottom:3px}
+.em-node-b,.em-sub-b{padding-left:2px}
+.em-sub{margin:6px 0 6px 12px;padding-left:12px;border-left:2px dotted var(--line-2)}
+.em-leaf{font-size:12.5px;color:var(--text-2);line-height:1.9;padding:3px 9px;margin:3px 0;background:var(--brand-soft2);border-radius:6px;user-select:text;cursor:text}
+@media(max-width:900px){.em-block{flex-direction:column;gap:6px}.em-hd{flex:none}}
+
+/* 编辑模式 */
+.edit-switch.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+body.edit-mode #view .tx-edit{outline:1px dashed #9BB8DE;border-radius:3px;background:rgba(43,107,192,.05);cursor:text;transition:background .15s}
+body.edit-mode #view .tx-edit:hover,body.edit-mode #view .tx-edit:focus{background:rgba(43,107,192,.14);outline:1px solid var(--brand-2)}
+.edit-bar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px rgba(24,44,80,.18)}
+.edit-bar.hide{display:none}
+.edit-bar .eb-title{font-size:13px;font-weight:700;color:var(--brand)}
+.edit-bar .eb-tip{font-size:12px;color:var(--muted)}
+.tx-applied{color:inherit}

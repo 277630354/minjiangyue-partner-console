@@ -306,6 +306,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .stat-card.gold:after{background:var(--gold-soft)}
 .stat-card.green:after{background:#E7F6EF}
 .stat-card.purple:after{background:#F0EBFB}
+.stat-card.orange:after{background:#FEF2E3}
 .stat-label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;position:relative;z-index:1}
 .stat-value{font-size:25px;font-weight:800;margin:8px 0 4px;letter-spacing:-.5px;position:relative;z-index:1}
 .stat-foot{font-size:11px;color:var(--muted);position:relative;z-index:1}
@@ -448,6 +449,30 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
   .annot-main{flex-wrap:wrap}.annot-ops{width:100%;justify-content:flex-end}
   .annot-peek{padding-left:16px}
 }
+/* 权益架构图 · 纯文本导图 */
+.em-block{display:flex;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line-2)}
+.em-block:last-child{border-bottom:none;padding-bottom:4px}
+.em-hd{flex:0 0 210px;display:flex;align-items:flex-start;gap:8px;padding-top:2px}
+.em-no{flex:0 0 auto;min-width:26px;height:22px;line-height:22px;text-align:center;border-radius:6px;background:var(--brand-soft);color:var(--brand);font-size:11px;font-weight:700}
+.em-hd b{font-size:13px;color:var(--text);line-height:22px}
+.em-bd{flex:1;min-width:0}
+.em-node{margin-bottom:9px;padding-left:12px;border-left:2px solid var(--line)}
+.em-node:last-child{margin-bottom:0}
+.em-node-t,.em-sub-t{font-size:12.5px;font-weight:700;color:var(--brand);margin-bottom:3px}
+.em-node-b,.em-sub-b{padding-left:2px}
+.em-sub{margin:6px 0 6px 12px;padding-left:12px;border-left:2px dotted var(--line-2)}
+.em-leaf{font-size:12.5px;color:var(--text-2);line-height:1.9;padding:3px 9px;margin:3px 0;background:var(--brand-soft2);border-radius:6px;user-select:text;cursor:text}
+@media(max-width:900px){.em-block{flex-direction:column;gap:6px}.em-hd{flex:none}}
+
+/* 编辑模式 */
+.edit-switch.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+body.edit-mode #view .tx-edit{outline:1px dashed #9BB8DE;border-radius:3px;background:rgba(43,107,192,.05);cursor:text;transition:background .15s}
+body.edit-mode #view .tx-edit:hover,body.edit-mode #view .tx-edit:focus{background:rgba(43,107,192,.14);outline:1px solid var(--brand-2)}
+.edit-bar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:120;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px rgba(24,44,80,.18)}
+.edit-bar.hide{display:none}
+.edit-bar .eb-title{font-size:13px;font-weight:700;color:var(--brand)}
+.edit-bar .eb-tip{font-size:12px;color:var(--muted)}
+.tx-applied{color:inherit}
 
 </style>
 </head>
@@ -548,6 +573,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
       <div class="tb-right">
         <div class="tb-search"><i class="ico ico-search"></i><input id="globalSearch" placeholder="搜索订单 / 客户 / 收益单号"></div>
         <button class="icon-btn annot-switch" id="annotToggle" data-act="toggleAnnot" title="显示 / 隐藏页面注解">注</button>
+        <button class="icon-btn edit-switch" id="editToggle" data-act="toggleEdit" title="编辑模式：修改任意文字并写入源码">✎</button>
         <button class="icon-btn bell" id="msgBtn" title="消息通知">🔔<span class="badge" id="msgBadge">3</span></button>
         <div class="tb-user" id="tbUser"></div>
       </div>
@@ -562,8 +588,30 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 <div id="modalMask" class="mask modal-mask hide"></div>
 <div id="modal" class="modal hide"></div>
 <div id="toast" class="toast hide"></div>
+<div id="editBar" class="edit-bar hide">
+  <span class="eb-title">✎ 编辑模式</span>
+  <span class="eb-tip">直接点击页面上的文字即可修改，保存后写回源码</span>
+  <button class="btn btn-ghost btn-sm" data-act="resetEdits">恢复默认</button>
+  <button class="btn btn-primary btn-sm" data-act="saveEdits">保存并写入源码</button>
+  <button class="btn btn-soft btn-sm" data-act="exitEdit">退出编辑</button>
+</div>
 
 <script>
+/* ===== text-edits.js ===== */
+/* ============================================================
+ * 民匠有约 · 页面文案覆盖表（编辑模式写回源码的落点）
+ * 结构：{ "选择器": "编辑后的文案" }
+ * 说明：编辑模式保存时，会把改动后的文案写进本文件的 OVERRIDES 对象。
+ *       浏览器里保存会即时生效并暂存在 localStorage；
+ *       要把改动真正固化到源码，请保存后下载生成的新 HTML 替换原文件，
+ *       或把下载得到的 text-edits.js 覆盖本文件。
+ * ============================================================ */
+/* MJYY_TEXT_EDITS_DATA */
+window.MJYY_TEXT_EDITS = {
+  /* 示例：'原文': '新文案' */
+};
+
+
 /* ===== data.js ===== */
 /* ============================================================
  * 民匠有约 · 合伙人后台 — 政策规则配置 + 演示数据
@@ -774,6 +822,14 @@ const POLICY = {
     { type:'20% 推荐人奖励', bill:'次月 1 号', pay:'次月 25 日' },
     { type:'合伙人席位成交奖金（新增+续费）', bill:'次月 1 号', pay:'次月 25 日' },
     { type:'合伙人邀合伙人 5% 被动收益', bill:'次月 1 号', pay:'次月 25 日' }
+  ],
+  /* 按月 / 按年拆分：金牌与在职员工·铜牌权益身份下，席位成交奖金的新增按月、续费按年 */
+  settlementSplit:[
+    { type:'新增席位佣金', bill:'次月 1 号', pay:'次月 25 日', cycle:'月' },
+    { type:'20% 推荐人奖励', bill:'次月 1 号', pay:'次月 25 日', cycle:'月' },
+    { type:'合伙人席位成交奖金 · 新增', bill:'次月 1 号', pay:'次月 25 日', cycle:'月' },
+    { type:'合伙人席位成交奖金 · 续费', bill:'次年 1 月 1 号', pay:'次年 1 月 25 日', cycle:'年' },
+    { type:'合伙人邀合伙人 5% 被动收益', bill:'次月 1 号', pay:'次月 25 日', cycle:'月' }
   ],
 
   /* 业务口径 FAQ —— 源自《服务商问题梳理》17 项，系统已明确实现口径 */
@@ -1251,6 +1307,7 @@ const A = {
     r:['表5 年活跃度','四、4 推荐分成','《金银铜合伙人分佣体系补充说明》','待明确项 6'],
     n:[
       ['结算周期','本文档一~五章未规定；系统按补充说明「次月 1 日出账单、次月 25 日系统自动结算」。','配套文件'],
+      ['续费按年结算','金牌合伙人 / 在职员工·铜牌权益身份：续费分润与席位成交奖金（续费）按年结算，次年 1 月 1 日出账、1 月 25 日结算；按月账单与待结算统计不含续费分润，属系统实现口径。','系统实现'],
       ['开票与提现','自然人合伙人线上开票、企业合伙人上传发票经财务审核后提现，来自补充说明；本文档未规定。','配套文件'],
       ['活跃度校验','表 5 明确未达标者无续费分润，结算前须校验当年活跃度。','表5'],
       ['分成入账','被推荐方代理费 20% 分成、新增席位开发收益 5% 分成（含续费）计入当期账单。','四、4 / 表10'],
@@ -1426,6 +1483,11 @@ PAGES.dashboard={
 
 /* ==================== 我的收益 ==================== */
 function incomeHtml(a,st){
+    /* 金牌合伙人与在职员工·铜牌权益：续费分润按年结算、不参与按月自动结算 */
+    const renewDash=(a.level==='gold'||a.level==='bronze');
+    const settleText=renewDash?'次月 25 日自动结算（不包含续费分润）':'次月 25 日自动结算';
+    const pendingMonth=renewDash?U.sum(a.records,r=>r.status!=='已结算'&&r.source!=='renew_seat'):null;
+    const pendingYear=renewDash?U.sum(a.records,r=>r.status!=='已结算'&&r.source==='renew_seat'):null;
     const f=st.filters;
     let rows=a.records.filter(r=>
       (!f.source||r.source===f.source)&&(!f.status||r.status===f.status)&&
@@ -1434,10 +1496,17 @@ function incomeHtml(a,st){
     const filteredTotal=U.sum(rows), per=10, pages=Math.max(1,Math.ceil(rows.length/per)), pg=Math.min(st.page,pages);
     const shown=rows.slice((pg-1)*per,pg*per);
     const monthOpts=Array.from(new Set(a.records.map(r=>r.date.slice(0,7)))).sort().reverse().map(m=>[m,m]);
-    return '<div class="grid g4">'+statCard('账本累计收益',fmt(ledger(a)),'共 '+a.records.length+' 笔收益记录')+
-      statCard('已结算',fmt(settled(a)),'可发起提现','green')+
-      statCard('待结算 / 账单中',fmt(pending(a)),'次月 25 日自动结算','gold')+
-      statCard('可提现余额',fmt(avail(a)),'已提现 '+fmt(App.state.withdrawals.reduce((s,w)=>s+w.amount,0)),'purple')+'</div>'+
+    const cards=renewDash
+      ? '<div class="grid g5">'+statCard('账本累计收益',fmt(ledger(a)),'共 '+a.records.length+' 笔收益记录')+
+        statCard('已结算',fmt(settled(a)),'可发起提现','green')+
+        statCard('按月待结算',fmt(pendingMonth),'次月 25 日自动结算','gold')+
+        statCard('按年待结算',fmt(pendingYear),'续费分润 · 次年 1 月结算','orange')+
+        statCard('可提现余额',fmt(avail(a)),'已提现 '+fmt(App.state.withdrawals.reduce((s,w)=>s+w.amount,0)),'purple')+'</div>'
+      : '<div class="grid g4">'+statCard('账本累计收益',fmt(ledger(a)),'共 '+a.records.length+' 笔收益记录')+
+        statCard('已结算',fmt(settled(a)),'可发起提现','green')+
+        statCard('待结算 / 账单中',fmt(pending(a)),settleText,'gold')+
+        statCard('可提现余额',fmt(avail(a)),'已提现 '+fmt(App.state.withdrawals.reduce((s,w)=>s+w.amount,0)),'purple')+'</div>';
+    return cards+
 
     '<div class="section-title mt24">账期账单</div>'+
     '<div class="card"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>账期</th><th>收益笔数</th><th>账单金额</th><th>出账日</th><th>自动结算日</th><th>状态</th><th class="right">操作</th></tr></thead><tbody>'+
@@ -1455,11 +1524,11 @@ function incomeHtml(a,st){
         '<span class="small muted" style="margin-left:auto">共 '+rows.length+' 笔 · 合计 <b style="color:var(--brand)">'+fmt(filteredTotal)+'</b></span>'+
       '</div>'+
       pageTable(['收益单号','日期','收益来源','产品','客户 / 对象','新增席位','续费席位','金额','状态','操作'],
-        shown.map(r=>'<tr style="cursor:pointer" data-act="recordDetail" data-v="'+r.id+'"><td><b>'+r.id+'</b></td><td>'+r.date+'</td><td><span class="tag" style="background:'+U.src(r.source).color+'18;color:'+U.src(r.source).color+'">'+U.src(r.source).name+'</span></td><td>'+r.product+'</td><td>'+esc(r.customer)+'</td><td class="num">'+(r.newSeats||0)+'</td><td class="num">'+(r.renewSeats||0)+'</td><td><b class="num">'+fmt(r.amount)+'</b></td><td>'+U.tag(r.status)+'</td><td><button class="btn-text">详情 ›</button></td></tr>'),'没有符合条件的收益记录')+
+        shown.map(r=>'<tr style="cursor:pointer" data-act="recordDetail" data-v="'+r.id+'"><td><b>'+r.id+'</b></td><td>'+r.date+'</td><td><span class="tag" style="background:'+U.src(r.source).color+'18;color:'+U.src(r.source).color+'">'+U.src(r.source).name+'</span></td><td>'+r.product+'</td><td>'+esc(r.customer)+'</td><td class="num">'+(r.newSeats||0)+'</td><td class="num">'+(r.renewSeats||0)+'</td><td><b class="num">'+fmt(r.amount)+'</b></td><td>'+((renewDash&&r.source==='renew_seat')?'<span class="muted">-</span>':U.tag(r.status))+'</td><td><button class="btn-text">详情 ›</button></td></tr>'),'没有符合条件的收益记录')+
       '<div class="pager"><span>第 '+pg+' / '+pages+' 页</span><div class="pg">'+
         Array.from({length:pages},(_,i)=>'<button class="'+(i+1===pg?'active':'')+'" data-act="page" data-v="'+(i+1)+'">'+(i+1)+'</button>').join('')+'</div></div>'+
     '</div></div>'+
-    '<div class="notice mt14"><span class="ni">ℹ</span><div><b>结算口径：</b>次月 1 日出账单、次月 25 日系统自动结算；账单中 → 待结算 → 已结算。'+P.meta.invoiceRule+'。所有佣金、奖励系统自动结算，无需线下对账。</div></div>';
+    '<div class="notice mt14"><span class="ni">ℹ</span><div><b>结算口径：</b>次月 1 日出账单、'+(renewDash?'次月 25 日自动结算（不包含续费分润）；续费分润不参与自动结算，状态以「-」标记。':'次月 25 日系统自动结算；')+'账单中 → 待结算 → 已结算。'+P.meta.invoiceRule+'。所有佣金、奖励系统自动结算，无需线下对账。</div></div>';
 }
 
 /* ==================== 我的收益：按账号角色直接展示对应账本 ==================== */
@@ -1714,14 +1783,21 @@ PAGES.upgrade={
 PAGES.team={
   head(a){ return '<button class="btn btn-ghost btn-sm" data-act="export" data-v="team">导出团队看板</button>'; },
   html(a){
-    const invite='MJYY-'+a.id, link='https://partner.minjiangyue.com/i/'+invite;
+    const invite='MJYY-'+a.id;
+    const linkPartner='https://partner.minjiangyue.com/i/'+invite;
+    const linkCompany='https://corp.minjiangyue.com/i/'+invite;
     const teamSeats=a.team.reduce((s,t)=>s+t.seats,0), teamAmount=a.team.reduce((s,t)=>s+t.amount,0);
     return '<div class="grid g2" style="grid-template-columns:1fr 1.6fr">'+
       '<div class="card">'+cardHead('我的专属邀请码','拉新绑定入口')+'<div class="card-bd">'+
         '<div class="row" style="gap:18px;align-items:flex-start">'+U.qr(a.id.length*137)+
         '<div style="flex:1"><div class="small muted">邀请码</div><div style="font-size:20px;font-weight:800;letter-spacing:1px;color:var(--brand);margin:2px 0 10px">'+invite+'</div>'+
-        '<div class="small muted">邀请链接</div><div class="small" style="word-break:break-all;color:var(--text-2);margin-bottom:12px">'+link+'</div>'+
-        '<div class="row wrap"><button class="btn btn-primary btn-sm" data-act="copyInvite">复制邀请码</button><button class="btn btn-ghost btn-sm" data-act="copyLink">复制链接</button></div></div></div>'+
+        '<div class="small muted mt10">合伙人管理后台链接</div>'+
+        '<div class="small" style="word-break:break-all;color:var(--text-2);margin:2px 0 5px">'+linkPartner+'</div>'+
+        '<button class="btn btn-ghost btn-sm" data-act="copyLinkPartner">复制合伙人后台链接</button>'+
+        '<div class="small muted mt10">企业后台链接</div>'+
+        '<div class="small" style="word-break:break-all;color:var(--text-2);margin:2px 0 5px">'+linkCompany+'</div>'+
+        '<button class="btn btn-ghost btn-sm" data-act="copyLinkCompany">复制企业后台链接</button>'+
+        '<div class="row wrap mt12"><button class="btn btn-primary btn-sm" data-act="copyInvite">复制邀请码</button></div></div></div>'+
         '<div class="notice mt14"><span class="ni">ℹ</span><div>客户或新合伙人通过邀请码注册/下单即自动建立推荐—被推荐关系；分销层级限定两级，超出两级不再产生分佣。</div></div>'+
       '</div></div>'+
       '<div><div class="grid g2">'+statCard('一级绑定合伙人',a.teamCount+' <small style="font-size:13px;font-weight:500">位</small>','金 '+a.team.filter(t=>t.level==='金牌合伙人').length+' · 银 '+a.team.filter(t=>t.level==='银牌合伙人').length+' · 铜 '+a.team.filter(t=>t.level==='铜牌合伙人').length)+
@@ -1776,21 +1852,32 @@ PAGES.settlement={
   head(a){ return '<div class="row"><button class="btn btn-ghost btn-sm" data-act="export" data-v="bill">导出账单</button><button class="btn btn-primary btn-sm" data-act="withdraw">申请提现</button></div>'; },
   html(a){
     const wds=App.state.withdrawals;
-    return '<div class="grid g4">'+statCard('可提现余额',fmt(avail(a)),'已结算收益扣减已提现','green')+
-      statCard('本期账单',fmt(a.bills[0].amount),'2026-10 账期 · 待结算','gold')+
-      statCard('自动结算日','11 月 25 日','次月 1 日出账单')+
-      statCard('提现申请',wds.length+' <small style="font-size:13px;font-weight:500">笔</small>','审核中 '+wds.filter(w=>w.status==='审核中').length+' 笔','purple')+'</div>'+
+    const yearSplit=(a.level==='gold'||a.level==='bronze');
+    const topCards=yearSplit
+      ? '<div class="grid g5">'+statCard('可提现余额',fmt(avail(a)),'已结算收益扣减已提现','green')+
+        statCard('本期账单',fmt(a.bills[0].amount),'2026-10 账期 · 待结算','gold')+
+        statCard('自动结算日','11 月 25 日','次月 1 日出账单 · 不含续费')+
+        statCard('续费自动结算日','次年 1 月 25 日','续费分润按年结算','orange')+
+        statCard('提现申请',wds.length+' <small style="font-size:13px;font-weight:500">笔</small>','审核中 '+wds.filter(w=>w.status==='审核中').length+' 笔','purple')+'</div>'
+      : '<div class="grid g4">'+statCard('可提现余额',fmt(avail(a)),'已结算收益扣减已提现','green')+
+        statCard('本期账单',fmt(a.bills[0].amount),'2026-10 账期 · 待结算','gold')+
+        statCard('自动结算日','11 月 25 日','次月 1 日出账单')+
+        statCard('提现申请',wds.length+' <small style="font-size:13px;font-weight:500">笔</small>','审核中 '+wds.filter(w=>w.status==='审核中').length+' 笔','purple')+'</div>';
+    return topCards+
 
     '<div class="grid g2 mt18" style="grid-template-columns:1fr 1.3fr">'+
-      '<div class="card">'+cardHead('结算周期','系统自动结算')+'<div class="card-bd"><div class="timeline">'+
+      '<div class="card">'+cardHead('结算周期',yearSplit?'按月 + 按年双周期':'系统自动结算')+'<div class="card-bd"><div class="timeline">'+
         '<div class="tl-item done"><b>业务发生</b><p>订单成交 / 推荐落地，系统按等级规则生成收益单与分润快照</p></div>'+
-        '<div class="tl-item done"><b>次月 1 日 · 出账单</b><p>汇总上月全部收益，生成账单，合伙人可在线核对</p></div>'+
-        '<div class="tl-item"><b>次月 25 日 · 自动结算</b><p>系统自动结算至账户，无需线下对账</p></div>'+
+        '<div class="tl-item done"><b>次月 1 日 · 出账单</b><p>汇总上月收益（不含续费分润），生成账单，合伙人可在线核对</p></div>'+
+        '<div class="tl-item"><b>次月 25 日 · 自动结算</b><p>按月项目自动结算至账户：新增席位佣金、推荐奖励、席位成交奖金（新增）等</p></div>'+
+        (yearSplit?'<div class="tl-item"><b>次年 1 月 25 日 · 续费按年结算</b><p>续费分润按年结算：次年 1 月 1 日出账、1 月 25 日结算，首页「按年待结算」可查；席位成交奖金（续费）同口径</p></div>':'')+
         '<div class="tl-item"><b>发票 / 开票校验</b><p>'+P.meta.invoiceRule+'</p></div>'+
         '<div class="tl-item"><b>提现打款</b><p>财务审核通过后打款至绑定结算账户</p></div>'+
       '</div></div></div>'+
-      '<div><div class="card">'+cardHead('结算项目与时间','补充说明第 6 条')+'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>业务类型</th><th>出账时间</th><th>结算时间</th></tr></thead><tbody>'+
-        P.settlementItems.map(x=>'<tr><td>'+x.type+'</td><td>'+x.bill+'</td><td><b>'+x.pay+'</b></td></tr>').join('')+'</tbody></table></div></div>'+
+      '<div><div class="card">'+cardHead('结算项目与时间',yearSplit?'续费分润按年结算':'补充说明第 6 条')+'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>业务类型</th><th>出账时间</th><th>结算时间</th><th>周期</th></tr></thead><tbody>'+
+        (yearSplit
+          ? P.settlementSplit.map(x=>'<tr'+(x.cycle==='年'?' style="background:#FFF8EC"':'')+'><td>'+x.type+'</td><td>'+x.bill+'</td><td><b>'+x.pay+'</b></td><td><span class="tag '+(x.cycle==='年'?'tag-orange':'tag-blue')+'">按'+x.cycle+'</span></td></tr>').join('')
+          : P.settlementItems.map(x=>'<tr><td>'+x.type+'</td><td>'+x.bill+'</td><td><b>'+x.pay+'</b></td><td><span class="tag tag-blue">按月</span></td></tr>').join(''))+'</tbody></table></div></div>'+
         '<div class="card mt18">'+cardHead('账期账单','最近 4 期')+'<div class="tbl-wrap"><table class="tbl"><thead><tr><th>账期</th><th>笔数</th><th>金额</th><th>结算日</th><th>状态</th></tr></thead><tbody>'+
         a.bills.map(b=>'<tr><td><b>'+b.period+'</b></td><td>'+b.count+'</td><td class="num"><b>'+fmt(b.amount)+'</b></td><td>'+b.payDate+'</td><td>'+U.tag(b.status)+'</td></tr>').join('')+'</tbody></table></div></div>'+
       '</div></div></div>'+
@@ -1798,9 +1885,83 @@ PAGES.settlement={
     '<div class="section-title mt24">提现记录</div>'+
     '<div class="card">'+pageTable(['申请日期','提现金额','结算账户','发票 / 开票','状态'],
       wds.map(w=>'<tr><td>'+w.date+'</td><td class="num"><b>'+fmt(w.amount)+'</b></td><td>'+esc(w.bank)+'</td><td>'+(U.isCorp(a.subject)?'增值税发票已上传':'系统自动开票')+'</td><td>'+U.tag(w.status)+'</td></tr>'),'暂无提现记录，点击右上角「申请提现」发起')+'</div></div>'+
-    '<div class="notice mt14"><span class="ni">ℹ</span><div>'+P.meta.settlement.note+'。<b>退费口径：</b>政策未明确中途退出的代理费退还与已售席位分润处理，系统预留「退出/退费申请」入口，提交后进入总部人工审核，已结算收益不回滚、未结算账单冻结待审，最终以双方签署的渠道合作协议为准。</div></div>';
+    '<div class="notice mt14"><span class="ni">ℹ</span><div>'+P.meta.settlement.note+(yearSplit?'。<b>续费按年口径：</b>续费分润与席位成交奖金（续费）不参与按月自动结算，次年 1 月 1 日出账、1 月 25 日结算；按月账单与待结算统计均不含续费分润。':'')+'。<b>退费口径：</b>政策未明确中途退出的代理费退还与已售席位分润处理，系统预留「退出/退费申请」入口，提交后进入总部人工审核，已结算收益不回滚、未结算账单冻结待审，最终以双方签署的渠道合作协议为准。</div></div>';
   }
 };
+
+/* ==================== 权益架构图（纯文本 · 可选中复制） ==================== */
+PAGES.equityMap={
+  html(){
+    /* em: 一级分支  node: 二级节点  leaf: 三级明细 —— 全部为可选中文本 */
+    return '<div class="card"><div class="card-hd"><h3>城市合伙人及服务商权益体系架构<span class="sub">全链路一图总览 · 文字可选中复制</span></h3>'+
+      '<span class="tag tag-blue">八大身份 · 九个类别</span></div><div class="card-bd">'+
+      '<p class="small muted" style="margin-bottom:14px">金牌合伙人、银牌合伙人、铜牌合伙人、中心城市服务商、地级城市服务商、高级总顾问招募城市服务商、高级总顾问招募城市合伙人、其他顾问、全员营销，八个身份九个类别。</p>'+
+
+      em('01','体系总览',[
+        leaf('城市合伙人（金牌 / 银牌 / 铜牌）→ 城市服务商（中心 / 地级）→ 顾问体系 → 全员营销')
+      ])+
+
+      em('02','合伙人体系 → 权益对比',[
+        node('金牌合伙人',[leaf('代理费 69,800 元 ｜ 安心云首年 350 元/单 ｜ 如意宝首年 240 元/单 ｜ 福运宝 4%~0.4% （一4‰，二2‰，三1.2‰，四0.8‰，五0.4‰）｜续费收益：续费年第一年50%，二30%，三20%，四10% ｜ 活跃度 ≥400 单/年')]),
+        node('银牌合伙人',[leaf('代理费 6,980 元 ｜ 安心云首年 200 元/单 ｜ 如意宝首年 180 元/单 ｜ 福运宝 3%~0.3% （一3‰，二1.5‰，三0.9‰，四0.6‰，五0.3‰）｜续费收益：续费年第一年50%，二30%，三20%，四10% ｜ 活跃度 ≥100 单/年')]),
+        node('铜牌合伙人',[leaf('代理费 0 元 ｜ 安心云首年 130 元/单 ｜ 如意宝首年 130 元/单 ｜ 福运宝 2%~0.2% （一2‰，二1‰，三0.6‰，四0.4‰，五0.2‰）｜ 续费年安心云，如意宝通金银比例｜活跃度 ≥10 单/年')])
+      ])+
+
+      em('03','合伙人晋升通道',[
+        node('铜牌 → 银牌',[leaf('路径一：自身 + 直推团队累计席位 ≥150 个 ｜ 路径二：推荐银牌 2 位 + 金牌 1 位')]),
+        node('银牌 → 金牌',[leaf('路径一：自身 + 直推团队累计席位 ≥300 个 ｜ 路径二：推荐银牌 5 位 + 金牌 2 位')])
+      ])+
+
+      em('04','合伙人推荐奖励机制',[
+        leaf('代理费分成 20% ｜ 被推荐方新增席位收益 5% 分成 ｜ 续费权益：同享 5% 计发')
+      ])+
+
+      em('05','合伙人席位成交奖金',[
+        leaf('金牌：每 1000 席位奖 2 万元（限 4 次）｜ 银牌：每 100 席位奖 2000 元（限 4 次）')
+      ])+
+
+      em('06','城市服务商 → 中心 / 地级对比',[
+        node('中心城市服务商',[leaf('加盟费 50 万元 ｜ 城市：一线城市 / 省会 + 最多 4 副城 ｜ 任务：3 万单')]),
+        node('地级城市服务商',[leaf('加盟费 20 万元 ｜ 城市：地级市排名 100 内 ｜ 任务：1 万单')]),
+        node('分润标准（中心 = 地级）',[leaf('安心云首年 410 元/单、次年起 50% ｜ 如意宝首年 300 元/单、次年起 50% ｜ 福运宝首年 5%、次年起 2.5%')])
+      ])+
+
+      em('07','城市服务商招商奖励',[
+        leaf('推荐中心服务商 5 万元 ｜ 推荐地级服务商 2 万元 ｜ 推荐金牌 13,960 元 ｜ 推荐银牌 1,396 元 ｜ 被推荐方新增和续费席位收益 5% 分成')
+      ])+
+
+      em('08','城市服务商被动收益',[
+        leaf('安心云新席 60 元/席 ｜ 如意宝新席 80 元/席 ｜ 福运宝新席流水 1% ｜ 备注：自主开发不计入')
+      ])+
+
+      em('09','顾问招商奖励',[
+        node('招商城市服务商',[
+          sub('高级总顾问',[leaf('自有资源招商 5% ｜ 直接推荐招商 15% ｜ 转介绍：总顾问 5% + 其他顾问 10%')]),
+          sub('其他顾问',[leaf('推荐成功城市服务商：招商额 10%')])
+        ]),
+        node('招商城市合伙人',[leaf('城市合伙人加盟费 20% 的推荐奖励 ｜ 被推荐方新增和续费席位收益 5% 分成 ｜ 该收益与区域被动收益权益不可同时享受')])
+      ])+
+
+      em('10','全员营销（公司员工）',[
+        leaf('基础权益：铜牌合伙人权益 ｜ 推荐中心服务商 2.5 万元 ｜ 推荐地级服务商 1 万元')
+      ])+
+
+      '</div></div>';
+  }
+};
+function em(no,title,lines){
+  return '<div class="em-block"><div class="em-hd"><span class="em-no">'+no+'</span><b>'+title+'</b></div>'+
+    '<div class="em-bd">'+lines.join('')+'</div></div>';
+}
+function node(title,lines){
+  return '<div class="em-node"><div class="em-node-t">'+title+'</div><div class="em-node-b">'+lines.join('')+'</div></div>';
+}
+function sub(title,lines){
+  return '<div class="em-sub"><div class="em-sub-t">'+title+'</div><div class="em-sub-b">'+lines.join('')+'</div></div>';
+}
+function leaf(text){
+  return '<div class="em-leaf">'+text+'</div>';
+}
 
 /* ==================== 政策与规则 ==================== */
 PAGES.rules={
@@ -2090,10 +2251,11 @@ const NAV=[
   { group:'权益与成长', items:[ {k:'benefits',t:'我的权益',i:'◆'}, {k:'upgrade',t:'晋升中心',i:'↑'}, {k:'team',t:'团队与邀请',i:'◎'} ] },
   { group:'收益中心', items:[ {k:'income',t:'我的收益',i:'¥'}, {k:'sources',t:'收益来源',i:'⊞'}, {k:'stats',t:'收益统计',i:'▤'}, {k:'settlement',t:'结算与提现',i:'⇄'} ] },
   { group:'业务管理', items:[ {k:'orders',t:'席位订单',i:'▣'} ] },
-  { group:'支持与设置', items:[ {k:'rules',t:'政策与规则',i:'文'}, {k:'settings',t:'账户设置',i:'⚙'} ] }
+  { group:'支持与设置', items:[ {k:'rules',t:'政策与规则',i:'文'}, {k:'settings',t:'账户设置',i:'⚙'} ] },
+  { group:'权益架构图', items:[ {k:'equityMap',t:'权益架构图',i:'◇'} ] }
 ];
-const TITLES={dashboard:'工作台',messages:'消息中心',benefits:'我的权益',upgrade:'晋升中心',team:'团队与邀请',income:'我的收益',sources:'收益来源',stats:'收益统计',settlement:'结算与提现',orders:'席位订单',rules:'政策与规则',settings:'账户设置'};
-const SUBTITLES={dashboard:'权益、收益与经营情况一屏掌握',income:'账单明细、结算状态与提现',sources:'每笔收益从哪来，按什么口径算',stats:'多维度趋势、结构与对比分析',benefits:'等级权益、分润规则与增值包',upgrade:'免费晋升与补差价晋升双通道',team:'一级绑定关系与团队业绩看板',orders:'客户席位、基准日与分润快照',settlement:'账单周期、自动结算与提现流水',rules:'2026 综合版政策全文口径与常见问题',messages:'结算、政策、团队与审核通知',settings:'主体资料、结算账户与身份切换'};
+const TITLES={dashboard:'工作台',messages:'消息中心',benefits:'我的权益',upgrade:'晋升中心',team:'团队与邀请',income:'我的收益',sources:'收益来源',stats:'收益统计',settlement:'结算与提现',orders:'席位订单',rules:'政策与规则',equityMap:'权益架构图',settings:'账户设置'};
+const SUBTITLES={dashboard:'权益、收益与经营情况一屏掌握',income:'账单明细、结算状态与提现',sources:'每笔收益从哪来，按什么口径算',stats:'多维度趋势、结构与对比分析',benefits:'等级权益、分润规则与增值包',upgrade:'免费晋升与补差价晋升双通道',team:'一级绑定关系与团队业绩看板',orders:'客户席位、基准日与分润快照',settlement:'账单周期、自动结算与提现流水',rules:'2026 综合版政策全文口径与常见问题',equityMap:'城市合伙人及服务商权益体系一图总览',messages:'结算、政策、团队与审核通知',settings:'主体资料、结算账户与身份切换'};
 
 /* ---------------- App ---------------- */
 const App = {
@@ -2101,7 +2263,8 @@ const App = {
     logged:false, onboarded:true, accountKey:'gold', route:'dashboard',
     obStep:0, obData:{ identity:'partner', level:'gold', subject:'企业', pay:'对公转账', form:{} },
     custom:null, filters:{source:'',status:'',period:'',kw:''}, page:1,
-    withdrawals:[], readNotices:[], chartMode:'line', statRange:12, annotOn:true, obReturn:'login'
+    withdrawals:[], readNotices:[], chartMode:'line', statRange:12, annotOn:true, obReturn:'login',
+    editMode:false, textEdits:{}
   },
 
   init(){
@@ -2124,6 +2287,14 @@ const App = {
       const s=JSON.parse(localStorage.getItem('mjyy_state')||'{}');
       Object.assign(this.state, s, {logged:false});
     }catch(e){}
+    /* 文案覆盖：优先源码内置，其次本地保存 */
+    const builtin=(window.MJYY_TEXT_EDITS&&Object.keys(window.MJYY_TEXT_EDITS).length)?window.MJYY_TEXT_EDITS:null;
+    let local=null;
+    try{ local=JSON.parse(localStorage.getItem('mjyy_text_edits')||'null'); }catch(e){}
+    const edits=Object.assign({},builtin||{},local||{});
+    Object.keys(edits).forEach(k=>{ if(!edits[k]) delete edits[k]; });
+    this.state.textEdits=edits;
+    this.state.editMode=false;
   },
   save(){
     const s=JSON.parse(JSON.stringify(this.state));
@@ -2431,9 +2602,114 @@ const App = {
     $('#view').innerHTML='<div class="page-head"><div><h2>'+TITLES[r]+'</h2><p>'+sub+'</p></div>'+(page.head?page.head(a,this.state):'')+'</div>'+
       (this.state.annotOn?U.annotBar(annotKey):'')+page.html(a,this.state);
     if(page.bind) page.bind(a,this.state);
+    this.applyTextEdits();
     const vs=$('.view-scroll'); if(vs) vs.scrollTop=0;
   },
   go(r){ this.state.route=r; this.state.page=1; location.hash='#/'+r; this.render(); },
+
+  /* --- 编辑模式：任意文案可改，保存后写回源码 --- */
+  applyTextEdits(){
+    /* 用文本节点遍历做原文→新文替换，避免 innerHTML 破坏结构与事件 */
+    const edits=this.state.textEdits||{}, src=Object.keys(edits);
+    if(!src.length) return;
+    const w=document.createTreeWalker($('#view'),NodeFilter.SHOW_TEXT,null,false);
+    const hits=[]; let n;
+    while((n=w.nextNode())){
+      const t=n.nodeValue.trim();
+      if(edits[t]!==undefined && edits[t]!==t) hits.push([n,edits[t],t]);
+    }
+    hits.forEach(([node,val,orig])=>{
+      const s=document.createElement('span'); s.className='tx-applied'; s.dataset.txFrom=orig;
+      s.textContent=val; node.parentNode.replaceChild(s,node);
+    });
+  },
+  toggleEdit(){
+    this.state.editMode=!this.state.editMode;
+    const bar=$('#editBar'), btn=$('#editToggle');
+    if(bar) bar.classList.toggle('hide',!this.state.editMode);
+    if(btn) btn.classList.toggle('on',!!this.state.editMode);
+    document.body.classList.toggle('edit-mode',!!this.state.editMode);
+    if(this.state.editMode){
+      this.bindInlineEdit();
+      this.save();
+      U.toast('编辑模式已开启：点击页面文字即可修改');
+    }else{
+      this.save(); this.render();
+      U.toast('已退出编辑模式');
+    }
+  },
+  bindInlineEdit(){
+    /* 逐个文本节点设为可编辑，避免整体 contenteditable 破坏交互 */
+    const walk=document.createTreeWalker($('#view'),NodeFilter.SHOW_TEXT,null,false);
+    const nodes=[]; let n;
+    while((n=walk.nextNode())){
+      const t=n.nodeValue.trim();
+      if(!t||n.parentElement.closest('.annot-bar,.annot-main,.annot-peek,.edit-bar')) continue;
+      if(n.parentElement.closest('script,style,input,button')) continue;
+      nodes.push(n);
+    }
+    nodes.forEach(n=>{
+      const s=document.createElement('span');
+      s.className='tx-edit'; s.setAttribute('contenteditable','true'); s.setAttribute('spellcheck','false');
+      s.dataset.tx=n.nodeValue.trim();
+      n.parentNode.insertBefore(s,n); s.appendChild(n);
+    });
+  },
+  saveEdits(){
+    const edits=this.state.textEdits||(this.state.textEdits={});
+    let count=0;
+    $$('#view .tx-edit').forEach(s=>{
+      const now=s.textContent.trim(), key=s.dataset.tx;
+      if(now&&now!==key){ edits[key]=now; count++; }
+    });
+    this.save();
+    if(!count){ U.toast('没有检测到改动'); return; }
+    U.toast('已保存 '+count+' 处改动，正在生成源码文件');
+    setTimeout(()=>this.exportSource(),400);
+  },
+  resetEdits(){
+    if(!confirm('确定恢复全部默认文案？本地保存的改动将被清除。')) return;
+    this.state.textEdits={}; this.save(); this.render();
+    this.bindInlineEdit(); U.toast('已恢复默认文案');
+  },
+  exitEdit(){ this.toggleEdit(); },
+  exportSource(){
+    /* 把当前 DOM 的文案改动固化成一份新的单文件 HTML 供下载 */
+    const edits=this.state.textEdits||{};
+    const doc=document.documentElement.cloneNode(true);
+    const body=doc.querySelector('body');
+    if(body){
+      Array.prototype.slice.call(body.querySelectorAll('.tx-edit')).forEach(s=>{ s.removeAttribute('contenteditable'); s.removeAttribute('spellcheck'); s.removeAttribute('data-tx'); s.classList.remove('tx-edit'); });
+      const bar=body.querySelector('#editBar'); if(bar) bar.remove();
+      body.classList.remove('edit-mode');
+    }
+    /* 只替换「文案覆盖表」脚本块：以 MJYY_TEXT_EDITS_DATA 标记识别，绝不触碰主程序 */
+    const scripts=Array.prototype.slice.call(doc.querySelectorAll('script'));
+    let patched=false;
+    scripts.forEach(sc=>{
+      if(!patched && !sc.src && sc.textContent && sc.textContent.indexOf('MJYY_TEXT_EDITS_DATA')>=0){
+        sc.textContent='/* MJYY_TEXT_EDITS_DATA */ window.MJYY_TEXT_EDITS='+JSON.stringify(edits,null,2)+';';
+        patched=true;
+      }
+    });
+    /* 若这个版本没有独立覆盖表脚本（如旧单文件版），在 head 里插入一份 */
+    if(!patched){
+      const head=doc.querySelector('head');
+      const sc=doc.createElement('script');
+      sc.textContent='/* MJYY_TEXT_EDITS_DATA */ window.MJYY_TEXT_EDITS='+JSON.stringify(edits,null,2)+';';
+      if(head) head.appendChild(sc);
+    }
+    let html='<!DOCTYPE html>\n'+doc.outerHTML;
+    /* 运行期 localStorage 覆盖也写入，保证替换原文件后长期生效 */
+    const ls='<script>try{localStorage.setItem("mjyy_text_edits",'+JSON.stringify(JSON.stringify(edits))+');}catch(e){}<\/script>';
+    html=html.replace('</head>',()=>ls+'\n</head>');
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='民匠有约合伙人后台管理系统.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    U.toast('源码文件已生成并下载，请用它替换原 HTML');
+  },
 
   /* --- 页面注解 --- */
   openAnnot(key){
@@ -2541,6 +2817,8 @@ const App = {
       case 'withdraw': this.withdrawModal(); return false;
       case 'doWithdraw': this.doWithdraw(); return false;
       case 'copyInvite': U.copy('MJYY-'+this.account().id); return false;
+      case 'copyLinkPartner': U.copy('https://partner.minjiangyue.com/i/MJYY-'+this.account().id); return false;
+      case 'copyLinkCompany': U.copy('https://corp.minjiangyue.com/i/MJYY-'+this.account().id); return false;
       case 'copyLink': U.copy('https://partner.minjiangyue.com/i/MJYY-'+this.account().id); return false;
       case 'recordDetail': this.recordDetail(v); return false;
       case 'advisorDetail': this.advisorDetail(v); return false;
@@ -2559,6 +2837,10 @@ const App = {
       case 'toast': U.toast(v); return false;
       case 'openAnnot': this.openAnnot(v); return false;
       case 'toggleAnnot': this.toggleAnnot(); return false;
+      case 'toggleEdit': this.toggleEdit(); return false;
+      case 'saveEdits': this.saveEdits(); return false;
+      case 'resetEdits': this.resetEdits(); return false;
+      case 'exitEdit': this.exitEdit(); return false;
       case 'noop': return false;
       default: if(window.PAGES._handle) return window.PAGES._handle(act,v,t,e,this);
     }
@@ -2593,15 +2875,16 @@ const App = {
     if(a.level==='advisorService') return this.advisorDetail(id);
     const r=a.records.find(x=>x.id===id); if(!r)return;
     const s=U.src(r.source);
+    const renewDash=(a.level==='gold'||a.level==='bronze')&&r.source==='renew_seat';
     U.drawer('收益明细 · '+r.id,
-      '<div class="card" style="box-shadow:none"><div class="card-bd"><div class="small muted">收益金额</div><div class="money" style="color:var(--brand);margin:6px 0 14px">'+U.fmt(r.amount)+'</div>'+U.tag(r.status)+'</div></div>'+
+      '<div class="card" style="box-shadow:none"><div class="card-bd"><div class="small muted">收益金额</div><div class="money" style="color:var(--brand);margin:6px 0 14px">'+U.fmt(r.amount)+'</div>'+(renewDash?'<span class="muted">-</span>':U.tag(r.status))+'</div></div>'+
       '<div class="section-title">基本信息</div>'+
       '<div class="kv"><span>收益来源</span><b>'+s.name+'</b></div><div class="kv"><span>发生日期</span><b>'+r.date+'</b></div>'+
       '<div class="kv"><span>关联产品</span><b>'+r.product+'</b></div><div class="kv"><span>客户 / 对象</span><b>'+U.esc(r.customer)+'</b></div>'+
-      '<div class="kv"><span>新增席位</span><b>'+(r.newSeats||0)+' 席</b></div><div class="kv"><span>续费席位</span><b>'+(r.renewSeats||0)+' 席</b></div><div class="kv"><span>结算日</span><b>'+r.settle+'</b></div>'+
+      '<div class="kv"><span>新增席位</span><b>'+(r.newSeats||0)+' 席</b></div><div class="kv"><span>续费席位</span><b>'+(r.renewSeats||0)+' 席</b></div><div class="kv"><span>结算日</span><b>'+(renewDash?'次月 25 日自动结算（不包含续费分润）':r.settle)+'</b></div>'+
       '<div class="section-title">计算口径</div><div class="notice"><span class="ni">ƒ</span><div><b>'+U.esc(r.note)+'</b><br>'+s.desc+'</div></div>'+
       '<div class="section-title">状态流转</div><div class="timeline">'+
-      P.statusFlow.map((st,i)=>{const idx=P.statusFlow.indexOf(r.status);return '<div class="tl-item '+(i<=idx?'done':'')+'"><b>'+st+'</b><p>'+(i<=idx?'已完成':'待进入')+(i===0?' · 次月 1 日出账单':'')+(i===2?' · 次月 25 日自动结算':'')+'</p></div>';}).join('')+'</div>',
+      P.statusFlow.map((st,i)=>{const idx=P.statusFlow.indexOf(r.status);return '<div class="tl-item '+(renewDash||i<=idx?'done':'')+'"><b>'+st+'</b><p>'+(renewDash?'不适用 · 续费分润不参与自动结算':(i<=idx?'已完成':'待进入')+(i===0?' · 次月 1 日出账单':'')+(i===2?' · 次月 25 日自动结算':''))+'</p></div>';}).join('')+'</div>',
       '<button class="btn btn-ghost" data-act="closeDrawer">关闭</button><button class="btn btn-primary" data-act="toast" data-v="已发起对账申请，总部管家将在 1 个工作日内响应">发起对账</button>');
   },
   advisorDetail(v){
@@ -2708,8 +2991,10 @@ const App = {
             a.records.map(r=>[r.id,r.date,U.src(r.source).name,r.customer,r.product,r.newSeats||0,r.renewSeats||0,r.amount,r.status,r.settle,r.note]));
         }
       } else {
+        const rd=(a.level==='gold'||a.level==='bronze');
         U.csv('收益明细_'+a.id+'.csv',['收益单号','日期','收益来源','产品','客户/对象','新增席位','续费席位','金额(元)','状态','结算日','计算口径'],
-          a.records.map(r=>[r.id,r.date,U.src(r.source).name,r.product,r.customer,r.newSeats||0,r.renewSeats||0,r.amount,r.status,r.settle,r.note]));
+          a.records.map(r=>[r.id,r.date,U.src(r.source).name,r.product,r.customer,r.newSeats||0,r.renewSeats||0,r.amount,
+            (rd&&r.source==='renew_seat')?'-':r.status,(rd&&r.source==='renew_seat')?'次月 25 日自动结算（不包含续费分润）':r.settle,r.note]));
       }
     } else if(kind==='orders'){
       U.csv('席位订单_'+a.id+'.csv',['订单号','客户','产品','席位','类型','首购基准日','业绩年度','订单金额(元)','状态'],
