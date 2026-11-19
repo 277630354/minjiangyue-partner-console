@@ -21,8 +21,8 @@ const U = {
   },
   /* 账号主体存的是「企业主体 / 个人主体」，入驻表单里是「企业 / 个人」，统一按前缀判断 */
   isCorp(s){ return /^企业/.test(String(s || '')); },
-  /* 高级总顾问两类账号：在「我的收益」里按角色直接展示对应账本 */
-  isAdvisor(a){ return !!a && (a.level==='advisorService'||a.level==='advisorPartner'); },
+  /* 高级总顾问账号：入驻统一为 advisor，历史两类演示账本仍兼容 */
+  isAdvisor(a){ return !!a && ['advisor','advisorService','advisorPartner'].includes(a.level); },
   levelTag(level){
     const m = { gold:'tag-gold', silver:'tag-silver', bronze:'tag-bronze', center:'tag-blue', local:'tag-blue', advisor:'tag-blue', advisorService:'tag-blue', advisorPartner:'tag-blue' };
     const name = P.levels[level] ? P.levels[level].name : (P.providers[level] ? P.providers[level].name : (level==='advisorService'?'高级总顾问（城市服务商）':(level==='advisorPartner'?'高级总顾问（城市合伙人）':'高级总顾问')));
@@ -215,7 +215,7 @@ const App = {
   },
   account(){ return this.state.custom && this.state.accountKey==='custom' ? this.state.custom : D.ACCOUNTS[this.state.accountKey]; },
   accounts(){
-    const list=[{k:'gold',label:'金牌合伙人',sub:'合伙人主账本'},{k:'center',label:'中心城市服务商',sub:'杭州市（主城）'},{k:'advisorService',label:'高级总顾问（城市服务商）',sub:'招商奖励账本 · 15% / 5%'},{k:'advisorPartner',label:'高级总顾问（城市合伙人）',sub:'推荐分成账本 · 20% + 5%'},{k:'bronze',label:'在职员工 · 铜牌权益',sub:'全员营销账本'}];
+    const list=[{k:'gold',label:'金牌合伙人',sub:'合伙人主账本'},{k:'center',label:'中心城市服务商',sub:'杭州市（主城）'},{k:'advisor',label:'高级总顾问',sub:'双线账本 · 招商 15% / 5% + 加盟费 20% / 席位 5%'},{k:'advisorService',label:'高级总顾问（城市服务商）',sub:'历史演示账本 · 15% / 5%'},{k:'advisorPartner',label:'高级总顾问（城市合伙人）',sub:'历史演示账本 · 20% + 5%'},{k:'bronze',label:'在职员工 · 铜牌权益',sub:'全员营销账本'}];
     if(this.state.custom) list.push({k:'custom',label:this.state.custom.role,sub:'新签约 · '+this.state.custom.joinDate});
     return list;
   },
@@ -325,9 +325,8 @@ const App = {
       const cards=[
         {k:'partner',t:'城市合伙人',d:'金牌 / 银牌 / 铜牌三级，不限区域、可全国开发；个人与企业均可申请',n:'01'},
         {k:'provider',t:'城市服务商',d:'中心城市 50 万 / 地级城市 20 万，享有区域被动收益与招商奖励',n:'02'},
-        {k:'advisorService',t:'高级总顾问（城市服务商）',d:'服务商招商：直接推荐 15%、间接 5%、资源团队统提 5%，层级限两级',n:'03'},
-        {k:'advisorPartner',t:'高级总顾问（城市合伙人）',d:'合伙人推荐：加盟费 20% 奖励，另享新增及续费席位 5% 分成',n:'04'},
-        {k:'employee',t:'在职员工',d:'全员营销，享有铜牌合伙人权益及员工招商奖励',n:'05'}
+        {k:'advisor',t:'高级总顾问',d:'招商奖励与推荐分成双线合一：招商额 15% / 5% / 统提 5%，加盟费 20% + 席位 5%，层级限两级',n:'03'},
+        {k:'employee',t:'在职员工',d:'全员营销，享有铜牌合伙人权益及员工招商奖励',n:'04'}
       ];
       body='<div class="ob-title"><h2>选择你的合作身份</h2><p>不同身份对应不同的权益包与分润规则，入驻后支持在后台一键切换多身份</p></div>'+
         '<div class="identity-grid">'+cards.map(c=>'<div class="identity-card '+(d.identity===c.k?'selected':'')+'" data-act="obIdentity" data-v="'+c.k+'"><div class="ic-num">'+c.n+'</div><div><div class="ic-t">'+c.t+'</div><div class="ic-d">'+c.d+'</div></div></div>').join('')+'</div>'+
@@ -345,18 +344,22 @@ const App = {
     /* Step 1 等级 */
     else if(st===1){
       const isProvider=d.identity==='provider';
-      const isAdvisor=d.identity==='advisorService'||d.identity==='advisorPartner';
-      const svc=d.identity==='advisorService';
+      const isAdvisor=d.identity==='advisor'||d.identity==='advisorService'||d.identity==='advisorPartner';
       let cards='';
       if(isAdvisor){
         cards='<div class="level-card selected" style="grid-column:1/-1">'+
           '<div class="lv-ico" style="background:var(--brand-soft);color:var(--brand)">顾</div>'+
-          '<h3>'+(svc?'高级总顾问 · 城市服务商':'高级总顾问 · 城市合伙人')+'</h3>'+
-          '<div class="small muted">'+(svc?'按招商城市等级与推荐层级计发奖励，无需代理费':'按代理费 20% + 席位 5% 计发推荐分成，无需代理费')+'</div>'+
+          '<h3>高级总顾问</h3>'+
+          '<div class="small muted">招商奖励与推荐分成双线合一，按招商对象对应口径计发，无需代理费</div>'+
           '<div class="lv-fee">0 <small>/ 顾问身份无代理费</small></div>'+
-          '<ul>'+(svc?
-            '<li><span>直接推荐招商</span><b>招商额 15%</b></li><li><span>介绍其他顾问推荐</span><b>招商额 5%</b></li><li><span>资源团队招商</span><b>统提 5%</b></li><li><span>分销层级</span><b>仅两级</b></li>':
-            '<li><span>代理费推荐</span><b>20%</b></li><li><span>新增席位分成</span><b>5%</b></li><li><span>续费席位分成</span><b>5%</b></li><li><span>互斥说明</span><b>不与区域被动收益同享</b></li>')+'</ul></div>';
+          '<ul>'+
+            '<li><span>直接推荐招商</span><b>招商额 15%</b></li>'+
+            '<li><span>介绍其他顾问推荐</span><b>招商额 5%</b></li>'+
+            '<li><span>资源团队招商</span><b>统提 5%</b></li>'+
+            '<li><span>代理费推荐奖励</span><b>20%</b></li>'+
+            '<li><span>新增 / 续费席位分成</span><b>5%</b></li>'+
+            '<li><span>分销层级</span><b>仅两级 · 收益与区域被动收益互斥</b></li>'+
+          '</ul></div>';
       } else if(isProvider){
         cards=Object.values(P.providers).map(p=>'<div class="level-card '+(d.level===p.key?'selected':'')+'" data-act="obLevel" data-v="'+p.key+'" style="grid-column:span 1"><div class="lv-ico" style="background:var(--brand-soft);color:var(--brand)">城</div><h3>'+p.name+'</h3><div class="lv-fee">'+U.fmt(p.fee)+'<small> / 加盟费</small></div><div class="small muted">'+p.city+'</div><ul><li><span>年度任务</span><b>'+p.target+'</b></li><li><span>增值包价值</span><b>'+p.packValue+'</b></li><li><span>年收益测算</span><b>'+p.expected+'</b></li><li><span>安心云分润</span><b>410 元/单</b></li></ul></div>').join('');
       } else {
@@ -370,14 +373,14 @@ const App = {
       const cmp='<div class="card mt18"><div class="card-hd"><h3>政策对比 <span class="sub">表 5 · 三级合伙人政策对比表</span></h3><span class="small muted">来源：招商政策（2026版）</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>等级</th><th>代理费</th><th>安心云首年</th><th>第 2 年</th><th>第 3 年</th><th>第 4 年</th><th>第 5 年及以后</th><th>年活跃度</th></tr></thead><tbody>'+
         Object.values(P.levels).map(l=>'<tr><td><b>'+l.name+'</b></td><td>'+U.fmt(l.fee)+'</td><td>'+l.products['安心云'].firstLabel+'</td><td>'+l.products['安心云'].renewLabel[0]+'</td><td>'+l.products['安心云'].renewLabel[1]+'</td><td>'+l.products['安心云'].renewLabel[2]+'</td><td>'+l.products['安心云'].renewLabel[3]+'</td><td>≥'+l.active+' 单/年</td></tr>').join('')+
         '</tbody></table></div></div>';
-      const advisorCmp='<div class="card mt18"><div class="card-hd"><h3>奖励口径 <span class="sub">四、招商奖励政策 · 表 8 / 表 10</span></h3><span class="small muted">来源：招商政策（2026版）</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>身份</th><th>直推</th><th>间推 / 分成</th><th>口径说明</th></tr></thead><tbody>'+
-        (svc
-          ? '<tr><td><b>总顾问 · 服务商线</b></td><td>15%</td><td>5%</td><td class="small">资源团队统提 5%；介绍的其他顾问推荐，总顾问 5%、顾问 10%；仅分两级</td></tr>'
-          : '<tr><td><b>总顾问 · 合伙人线</b></td><td>20%</td><td>5%</td><td class="small">加盟费 20% 推荐奖励；新增及续费席位开发收益 5%；与区域被动收益不可同时享受</td></tr>')+
+      const svcRow='<tr><td><b>总顾问 · 服务商线</b></td><td>15%</td><td>5%</td><td class="small">资源团队统提 5%；介绍的其他顾问推荐，总顾问 5%、顾问 10%；仅分两级</td></tr>';
+      const partnerRow='<tr><td><b>总顾问 · 合伙人线</b></td><td>20%</td><td>5%</td><td class="small">加盟费 20% 推荐奖励；新增及续费席位开发收益 5%；与区域被动收益不可同时享受</td></tr>';
+      const advisorCmp='<div class="card mt18"><div class="card-hd"><h3>奖励口径 <span class="sub">四、招商奖励政策 · 表 8 / 表 10</span></h3><span class="small muted">来源：招商政策（2026版）</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>奖励线</th><th>直推</th><th>间推 / 分成</th><th>口径说明</th></tr></thead><tbody>'+
+        (d.identity==='advisor'?(svcRow+partnerRow):((d.identity==='advisorService')?svcRow:partnerRow))+
         '</tbody></table></div></div>';
-      body='<div class="ob-title"><h2>选定合作等级</h2><p>'+(isAdvisor?(svc?'顾问身份按招商奖励比例计发':'顾问身份按推荐与席位分成计发'):(isProvider?'按城市级别选择服务商类型':'按投入与预期选择合伙人等级，后续达标可免费晋升'))+'</p></div>'+
+      body='<div class="ob-title"><h2>选定合作等级</h2><p>'+(isAdvisor?'高级总顾问按招商奖励与推荐分成双线口径计发':(isProvider?'按城市级别选择服务商类型':'按投入与预期选择合伙人等级，后续达标可免费晋升'))+'</p></div>'+
         '<div class="level-grid" style="'+((isProvider||isAdvisor)?'grid-template-columns:repeat(2,1fr)':'')+'">'+cards+'</div>'+(isAdvisor?advisorCmp:cmp)+
-        '<div class="notice mt14"><span class="ni">ℹ</span><div>'+(isAdvisor?(svc?'总顾问自己直接推荐的招商城市拿 15%；介绍的其他顾问推荐的招商城市，总顾问拿 5%、顾问拿 10%；顾问推荐招商只分设两级，超出两级由第二级顾问负责。':'合伙人推荐奖励为被推荐方代理费的 20%；额外享有被推荐方新增席位开发收益 5%，该席位后续续费同样按 5% 计发。该收益与区域被动收益权益不可同时享受。'):'续费分润 = 对应产品首年分润 × 折扣比例（第 2 年 50%、第 3 年 30%、第 4 年 20%、第 5 年及以后 10%）；未达年活跃度要求，当年不触发续费分润。福运宝按结算流水比例分润，非固定金额。')+'</div></div>';
+        '<div class="notice mt14"><span class="ni">ℹ</span><div>'+(isAdvisor?'总顾问自己直接推荐的招商城市拿 15%；介绍的其他顾问推荐的招商城市，总顾问拿 5%、顾问拿 10%，资源团队统提 5%，仅分两级。推荐合伙人另享代理费 20% 与新增及续费席位收益 5% 分成，与区域被动收益权益不可同时享受。':'续费分润 = 对应产品首年分润 × 折扣比例（第 2 年 50%、第 3 年 30%、第 4 年 20%、第 5 年及以后 10%）；未达年活跃度要求，当年不触发续费分润。福运宝按结算流水比例分润，非固定金额。')+'</div></div>';
       footer='<span class="ftip">第 2 / 5 步 · 等级后续可通过晋升中心调整</span><div class="row"><button class="btn btn-ghost" data-act="obPrev">上一步</button><button class="btn btn-primary" data-act="obNext">下一步：填写资料 →</button></div>';
     }
     /* Step 2 资料 */
@@ -411,12 +414,13 @@ const App = {
     }
     /* Step 4 支付 */
     else if(st===4){
-      const fee=d.identity==='provider'?(P.providers[d.level]||P.providers.center).fee:(P.levels[d.level]||P.levels.gold).fee;
-      const feeName=d.identity==='provider'?'加盟费':'代理费';
+      const isAdvPay=d.identity==='advisor'||d.identity==='advisorService'||d.identity==='advisorPartner';
+      const fee=isAdvPay?0:(d.identity==='provider'?(P.providers[d.level]||P.providers.center).fee:(P.levels[d.level]||P.levels.gold).fee);
+      const feeName=isAdvPay?'顾问服务费':(d.identity==='provider'?'加盟费':'代理费');
       body='<div class="ob-title"><h2>确认并支付' + feeName + '</h2><p>支付完成后系统即时开通对应等级权益与管理系统账号</p></div>'+
         '<div class="grid g2"><div class="card"><div class="card-hd"><h3>费用明细</h3></div><div class="card-bd"><div class="pay-summary">'+
-        '<div class="ps-row"><span>合作身份</span><b>'+(d.identity==='provider'?'城市服务商':(d.identity==='partner'?'城市合伙人':(d.identity==='advisorService'?'高级总顾问（城市服务商）':(d.identity==='advisorPartner'?'高级总顾问（城市合伙人）':'在职员工'))))+'</b></div>'+
-        '<div class="ps-row"><span>合作等级</span><b>'+(d.identity==='provider'?(P.providers[d.level]||P.providers.center).name:(P.levels[d.level]||P.levels.gold).name)+'</b></div>'+
+        '<div class="ps-row"><span>合作身份</span><b>'+(d.identity==='provider'?'城市服务商':(d.identity==='partner'?'城市合伙人':((d.identity==='advisor'||d.identity==='advisorService'||d.identity==='advisorPartner')?'高级总顾问':'在职员工')))+'</b></div>'+
+        '<div class="ps-row"><span>合作等级</span><b>'+(isAdvPay?'高级总顾问':(d.identity==='provider'?(P.providers[d.level]||P.providers.center).name:(P.levels[d.level]||P.levels.gold).name))+'</b></div>'+
         '<div class="ps-row"><span>主体类型</span><b>'+d.subject+'主体</b></div>'+
         '<div class="ps-row"><span>'+feeName+'</span><b>'+U.fmt(fee)+'</b></div>'+
         '<div class="ps-row"><span>权益包</span><b style="color:var(--down)">免费开通</b></div>'+
@@ -467,7 +471,8 @@ const App = {
     window.scrollTo(0,0);
   },
   buildCustomAccount(){
-    const d=this.state.obData, isAdvisor=d.identity==='advisorService'||d.identity==='advisorPartner';
+    const d=this.state.obData;
+    const isAdvisor=d.identity==='advisor'||d.identity==='advisorService'||d.identity==='advisorPartner';
     const src=isAdvisor?D.ACCOUNTS[d.identity]:D.ACCOUNTS.gold;
     const base=D.ACCOUNTS.gold;
     const lv=P.levels[d.level]||P.levels.gold, isProvider=d.identity==='provider';
@@ -506,7 +511,7 @@ const App = {
   render(){
     let r=this.state.route||'dashboard'; if(!TITLES[r]) r='income'; /* 旧链接兼容：已下线的二级菜单回到我的收益 */
     const a=this.account(), adv=r==='income'&&U.isAdvisor(a);
-    const sub=adv?(a.level==='advisorService'?'城市招商 15% / 5% · 统提 5% · 仅两级':'加盟费 20% + 新增及续费席位 5%'):SUBTITLES[r];
+    const sub=adv?(a.level==='advisorService'?'城市招商 15% / 5% · 统提 5% · 仅两级':(a.level==='advisorPartner'?'加盟费 20% + 新增及续费席位 5%':'招商 15% / 5% / 统提 5% · 加盟费 20% + 席位 5%')):SUBTITLES[r];
     const annotKey=adv?(a.level+'Income'):r;
     $$('#sbNav .nav-item').forEach(b=>b.classList.toggle('active',b.dataset.v===r));
     $('#crumb').innerHTML='民匠有约 <span style="margin:0 6px;color:#C4CEDB">/</span> <b>'+TITLES[r]+'</b>';
@@ -711,7 +716,7 @@ const App = {
       case 'closeDrawer': this.closeDrawer(); return false;
       case 'nav': this.go(v); return false;
       /* 入驻 */
-      case 'obIdentity': this.state.obData.identity=v; if(v==='provider')this.state.obData.level='center'; else if(v==='employee')this.state.obData.level='bronze'; else if(v==='advisorService')this.state.obData.level='advisorService'; else if(v==='advisorPartner')this.state.obData.level='advisorPartner'; else if(['partner'].includes(v))this.state.obData.level='gold'; this.renderOb(); this.save(); return false;
+      case 'obIdentity': this.state.obData.identity=v; if(v==='provider')this.state.obData.level='center'; else if(v==='employee')this.state.obData.level='bronze'; else if(v==='advisor')this.state.obData.level='advisor'; else if(['partner'].includes(v))this.state.obData.level='gold'; this.renderOb(); this.save(); return false;
       case 'obLevel': this.state.obData.level=v; this.renderOb(); this.save(); return false;
       case 'obSubject': this.obCollect(); this.state.obData.subject=v; this.renderOb(); return false;
       case 'obUpload': this.obCollect(); this.state.obData.form.uploaded=true; this.renderOb(); U.toast('材料上传成功（演示）'); return false;
@@ -802,15 +807,16 @@ const App = {
   advisorDetail(v){
     const acc=this.account(); if(!U.isAdvisor(acc)) return;
     const id=String(v||'').split('|').pop();
-    const isSvc=acc.level==='advisorService';
+    const isSvc=acc.level==='advisorService'||acc.level==='advisor';
     const r=acc.records.find(x=>x.id===id); if(!r)return;
     const s=U.src(r.source);
-    const rule=isSvc
+    const n=String(r.note||'');
+    const isPartnerLine=acc.level==='advisor'&&(n.indexOf('推荐奖励')>=0||n.indexOf('晋升差价')>=0||n.indexOf('席位')>=0);
+    const rule=(isSvc&&!isPartnerLine)
       ? '总顾问招商奖励：直接推荐 15%、介绍其他顾问推荐 5%、资源团队统提 5%，仅分两级。'
       : '总顾问推荐奖励：代理费 20% 分成 + 新增及续费席位 5% 分成；与区域被动收益不可同时享受。';
-    const n=String(r.note||'');
-    const svcType=n.indexOf('直接推荐')>=0?'直推招商':(n.indexOf('介绍顾问')>=0?'间推（介绍其他顾问）':(n.indexOf('资源团队')>=0?'资源团队统提':'招商奖励'));
-    const svcRate=svcType==='直推招商'?'15%':'5%';
+    const svcType=n.indexOf('直接推荐')>=0?'直推招商':(n.indexOf('介绍顾问')>=0?'间推（介绍其他顾问）':(n.indexOf('资源团队')>=0?'资源团队统提':(isPartnerLine?(n.indexOf('席位')>=0?'席位分成':'加盟费推荐'):'招商奖励')));
+    const svcRate=svcType==='直推招商'?'15%':(svcType==='加盟费推荐'?'20%':'5%');
     const basic=isSvc
       ? '<div class="kv"><span>收益类型</span><b>'+svcType+'</b></div>'+
         '<div class="kv"><span>奖励比例</span><b>'+svcRate+'</b></div>'+

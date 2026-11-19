@@ -183,11 +183,14 @@ function advisorServiceReward(r){
   if(n.indexOf('直接推荐')>=0) return {type:'直推招商',rate:'15%',cls:'tag-gold'};
   if(n.indexOf('介绍顾问')>=0) return {type:'间推（介绍其他顾问）',rate:'5%',cls:'tag-blue'};
   if(n.indexOf('资源团队')>=0) return {type:'资源团队统提',rate:'5%',cls:'tag-green'};
-  return {type:'招商奖励',rate:'5%',cls:'tag-blue'};
+  if(n.indexOf('推荐奖励')>=0||n.indexOf('晋升差价')>=0) return {type:'加盟费推荐',rate:'20%',cls:'tag-gold'};
+  if(n.indexOf('席位')>=0) return {type:'席位分成',rate:'5%',cls:'tag-green'};
+  return {type:'顾问奖励',rate:'—',cls:'tag-gray'};
 }
 
 function advisorIncomeHtml(acc){
-  const isSvc=acc.level==='advisorService';
+  /* advisor 为入驻统一后的高级总顾问：按奖励类型展示，兼容两类历史口径 */
+  const isSvc=acc.level==='advisorService'||acc.level==='advisor';
   const records=acc.records.slice().sort((a,b)=>b.date.localeCompare(a.date));
   const total=records.reduce((s,r)=>s+r.amount,0);
   const settled=records.filter(r=>r.status==='已结算').reduce((s,r)=>s+r.amount,0);
@@ -195,22 +198,24 @@ function advisorIncomeHtml(acc){
   const maxMonth=acc.monthly[acc.monthly.length-1];
   const bySrc={}; records.forEach(r=>{bySrc[r.source]=(bySrc[r.source]||0)+r.amount;});
   const srcList=P.sources.filter(s=>bySrc[s.key]).map(s=>({key:s.key,name:s.name,color:s.color,desc:s.desc,value:bySrc[s.key],count:records.filter(r=>r.source===s.key).length})).sort((a,b)=>b.value-a.value);
-  const rules=isSvc?[
+  const svcRules=[
     ['直接推荐招商','招商额 15%','总顾问自己资源团队中的招商城市，总顾问拿招商额 15%'],
     ['介绍其他顾问推荐','招商额 5%','总顾问介绍的其他顾问招商成功，总顾问拿 5%，其他顾问拿 10%'],
     ['资源团队统提','招商额 5%','自己资源团队中的招商城市，统提招商额的 5%'],
     ['层级限制','仅两级','超出两级的顾问由第二级顾问负责，公司不再计算和直接发放第三级顾问奖励']
-  ]:[
+  ];
+  const partnerRules=[
     ['代理费推荐奖励','20%','任意合伙人推荐新合伙人，获得被推荐方代理费的 20% 分成'],
     ['新增席位分成','5%','额外享有被推荐方新增席位开发收益 5% 的分成权益'],
     ['续费席位分成','5%','该席位后续续费，同样按 5% 计发分成'],
     ['互斥说明','不可同时享受','该收益与区域被动收益权益不可同时享受']
   ];
+  const rules=acc.level==='advisor'?svcRules.concat(partnerRules):(isSvc?svcRules:partnerRules);
   const rows=records;
   const svcSum=kind=>records.filter(r=>advisorServiceReward(r).type===kind).reduce((s,r)=>s+r.amount,0);
   return '<div class="card"><div class="card-bd"><div class="row between wrap" style="gap:16px">'+
     '<div class="row" style="gap:14px"><div class="avatar gold">顾</div><div><b style="font-size:16px">'+esc(acc.role)+'</b>'+
-    '<div class="small muted mt6">'+(isSvc?'招商奖励账本 · 直接 15% / 间接 5% / 统提 5%':'推荐分成账本 · 代理费 20% + 席位 5%')+' · 独立核算</div></div></div>'+
+    '<div class="small muted mt6">'+(acc.level==='advisor'?'双线账本 · 招商 15% / 5% / 统提 5% + 加盟费 20% + 席位 5%':(isSvc?'招商奖励账本 · 直接 15% / 间接 5% / 统提 5%':'推荐分成账本 · 代理费 20% + 席位 5%'))+' · 独立核算</div></div></div>'+
     '<div style="text-align:right"><div class="small muted">最近月收益</div><b style="font-size:17px;color:var(--gold)">'+fmt(maxMonth)+'</b></div></div></div></div>'+
 
     '<div class="grid g4 mt18">'+
@@ -230,11 +235,17 @@ function advisorIncomeHtml(acc){
     '<div class="card"><div class="card-bd">'+
       (isSvc?
         '<div class="row wrap" style="gap:18px;padding:10px 12px;margin-bottom:12px;background:#FAFCFF;border-radius:8px">'+
-          '<span class="small muted">直推 15% <b style="color:var(--gold)">'+fmt(svcSum('直推招商'))+'</b></span>'+
-          '<span class="small muted">间推 5% <b style="color:var(--brand)">'+fmt(svcSum('间推（介绍其他顾问）'))+'</b></span>'+
-          '<span class="small muted">统提 5% <b style="color:var(--down)">'+fmt(svcSum('资源团队统提'))+'</b></span>'+
+          (acc.level==='advisor'
+            ? '<span class="small muted">直推招商 15% <b style="color:var(--gold)">'+fmt(svcSum('直推招商'))+'</b></span>'+
+              '<span class="small muted">间推 5% <b style="color:var(--brand)">'+fmt(svcSum('间推（介绍其他顾问）'))+'</b></span>'+
+              '<span class="small muted">统提 5% <b style="color:var(--down)">'+fmt(svcSum('资源团队统提'))+'</b></span>'+
+              '<span class="small muted">加盟费推荐 20% <b style="color:var(--gold)">'+fmt(svcSum('加盟费推荐'))+'</b></span>'+
+              '<span class="small muted">席位分成 5% <b style="color:var(--down)">'+fmt(svcSum('席位分成'))+'</b></span>'
+            : '<span class="small muted">直推 15% <b style="color:var(--gold)">'+fmt(svcSum('直推招商'))+'</b></span>'+
+              '<span class="small muted">间推 5% <b style="color:var(--brand)">'+fmt(svcSum('间推（介绍其他顾问）'))+'</b></span>'+
+              '<span class="small muted">统提 5% <b style="color:var(--down)">'+fmt(svcSum('资源团队统提'))+'</b></span>')+
         '</div>'+
-        pageTable(['收益单号','日期','收益类型','招商对象','奖励比例','收益金额','状态','操作'],
+        pageTable(['收益单号','日期','收益类型',(acc.level==='advisor'?'对象 / 城市':'招商对象'),'奖励比例','收益金额','状态','操作'],
           rows.map(r=>{const x=advisorServiceReward(r);return '<tr style="cursor:pointer" data-act="advisorDetail" data-v="'+r.id+'">'+
             '<td><b>'+r.id+'</b></td><td>'+r.date+'</td>'+
             '<td><span class="tag '+x.cls+'">'+x.type+'</span></td><td>'+esc(r.customer)+'</td><td><b>'+x.rate+'</b></td>'+
@@ -249,9 +260,9 @@ function advisorIncomeHtml(acc){
       )+
     '</div></div>'+
 
-    '<div class="section-title mt24">'+(isSvc?'服务商招商奖励口径':'合伙人推荐奖励口径')+'</div>'+
+    '<div class="section-title mt24">'+(acc.level==='advisor'?'高级总顾问奖励口径 · 招商 + 推荐双线':(isSvc?'服务商招商奖励口径':'合伙人推荐奖励口径'))+'</div>'+
     '<div class="card">'+pageTable(['奖励项目','标准','政策说明'],rules.map(x=>'<tr><td><b>'+x[0]+'</b></td><td><span class="tag tag-gold">'+x[1]+'</span></td><td class="small">'+x[2]+'</td></tr>'))+'</div>'+
-    '<div class="notice mt14"><span class="ni">ℹ</span><div><b>数据来源：</b>《民匠有约招商政策（2026版）》四、招商奖励政策 · '+(isSvc?'表 8 顾问招商奖励政策':'四、4 合伙人推荐奖励 / 表 10')+'。次月 1 日出账单、25 日系统自动结算，与账本独立核算。点击任意明细可查看计算口径与状态流转。</div></div>';
+    '<div class="notice mt14"><span class="ni">ℹ</span><div><b>数据来源：</b>《民匠有约招商政策（2026版）》四、招商奖励政策 · '+(acc.level==='advisor'?'四、1 / 表 8 顾问招商奖励政策 / 四、4 合伙人推荐奖励 / 表 10':(isSvc?'表 8 顾问招商奖励政策':'四、4 合伙人推荐奖励 / 表 10'))+'。次月 1 日出账单、25 日系统自动结算，与账本独立核算。点击任意明细可查看计算口径与状态流转。</div></div>';
 }
 
 /* ==================== 收益来源 ==================== */

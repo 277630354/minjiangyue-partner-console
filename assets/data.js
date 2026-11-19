@@ -444,6 +444,18 @@ const ACCOUNTS={
     bank:'招商银行杭州分行 · **** 6821', records:advisorPartnerRecords, monthly:advisorPartnerMonthly, orders:[], team:team.slice(0,6), bills:bills,
     upgradeNext:'—', levelFee:0
   },
+  /* 入驻流程统一后的高级总顾问：合并服务商招商奖励与合伙人推荐奖励两条线 */
+  advisor:{
+    id:'AD20240110005', name:'张明远', phone:'13800008888', subject:'个人主体',
+    company:'高级总顾问', role:'高级总顾问', roleKey:'advisor', level:'advisor',
+    region:'全国', joinDate:'2024-01-10', contract:'MJ-GW-2024-0110-0005',
+    seats:0, activeYear:0, activeTarget:0, teamCount:6, awardTimes:0,
+    bank:'招商银行杭州分行 · **** 6821',
+    records:advisorServiceRecords.concat(advisorPartnerRecords).sort((a,b)=>b.date.localeCompare(a.date)),
+    monthly:advisorServiceMonthly.map((v,i)=>v+advisorPartnerMonthly[i]),
+    orders:[], team:team.slice(0,6), bills:bills,
+    upgradeNext:'—', levelFee:0
+  },
   bronze:{
     id:'EM20250101004', name:'张明远', phone:'13800008888', subject:'个人主体',
     company:'全员营销 · 在职员工', role:'在职员工（铜牌权益）', roleKey:'employee', level:'bronze',
