@@ -388,14 +388,27 @@ PAGES.upgrade={
   html(a){
     const l=P.levels[a.level], award=P.seatAward[a.level]||P.seatAward.bronze;
     const progress=l&&l.key==='bronze'?Math.min(100,a.seats/150*100):(l&&l.key==='silver'?Math.min(100,a.seats/300*100):100);
+    /* 免费晋升第二条路径：累计推荐合伙人（表 6） */
+    const refTarget=(l&&l.key==='bronze')?{silver:2,gold:1,seats:150,next:'银牌合伙人'}:(l&&l.key==='silver')?{silver:5,gold:2,seats:300,next:'金牌合伙人'}:null;
+    const silverCnt=(a.team||[]).filter(t=>t.level==='银牌合伙人').length;
+    const goldCnt=(a.team||[]).filter(t=>t.level==='金牌合伙人').length;
+    const refDone=refTarget?(silverCnt>=refTarget.silver&&goldCnt>=refTarget.gold):true;
+    const refPct=refTarget?Math.min(100,Math.min(silverCnt/refTarget.silver,goldCnt/refTarget.gold)*100):100;
     return '<div class="card"><div class="card-bd"><div class="row between wrap" style="gap:16px">'+
       '<div class="row" style="gap:14px"><div class="avatar gold">'+esc(l?l.short:'顾')+'</div><div><b style="font-size:16px">当前等级：'+levelName(a)+'</b><div class="small muted mt6">累计成交 '+num(a.seats)+' 席 · 一级绑定合伙人 '+a.teamCount+' 位 · 席位成交奖金已发放 '+a.awardTimes+' 次</div></div></div>'+
       '<div style="text-align:right"><div class="small muted">下一等级</div><b style="font-size:17px;color:var(--gold)">'+esc(a.upgradeNext==='—'?'已达最高等级':a.upgradeNext)+'</b></div></div></div></div>'+
 
     '<div class="grid g2 mt18">'+
       '<div class="card">'+cardHead('免费晋升通道','表 6 · 满足其一即可','<span class="tag tag-green">免费</span>')+'<div class="card-bd">'+
-        '<div class="between mb6"><span class="small">自身 + 直推团队累计成交席位</span><b class="num">'+num(a.seats)+' / '+(l&&l.key==='bronze'?'150':(l&&l.key==='silver'?'300':'已达上限'))+'</b></div>'+
+        '<div class="between mb6"><span class="small">路径一 · 自身 + 直推团队累计成交席位</span><b class="num">'+num(a.seats)+' / '+(l&&l.key==='bronze'?'150':(l&&l.key==='silver'?'300':'已达上限'))+'</b></div>'+
         '<div class="progress '+(progress>=100?'green':'gold')+'"><i style="width:'+progress+'%"></i></div>'+
+        '<div class="between mb6 mt14"><span class="small">路径二 · 累计推荐合伙人达标</span><b class="num">'+(refDone?'✓ 已达标':'未达标')+'</b></div>'+
+        (refTarget
+          ? '<div class="kv"><span>累计推荐银牌合伙人</span><b class="num">'+silverCnt+' / '+refTarget.silver+' 位'+(silverCnt>=refTarget.silver?' ✓':'')+'</b></div>'+
+            '<div class="kv"><span>累计推荐金牌合伙人</span><b class="num">'+goldCnt+' / '+refTarget.gold+' 位'+(goldCnt>=refTarget.gold?' ✓':'')+'</b></div>'+
+            '<div class="progress '+(refDone?'green':'gold')+' mt6"><i style="width:'+refPct+'%"></i></div>'+
+            '<div class="small muted mt6">同时满足银牌 '+refTarget.silver+' 位、金牌 '+refTarget.gold+' 位即可免费晋升至'+refTarget.next+'；一级绑定合伙人共 '+((a.team||[]).length)+' 位。</div>'
+          : '<div class="small muted">当前已达最高等级，推荐合伙人路径不再适用。</div>')+
         '<div class="divider"></div>'+
         P.upgrades.map(x=>'<div class="rule-block"><h4><span class="rn">↑</span>'+x.from+' → '+x.to+'</h4><ul>'+x.conditions.map(c=>'<li>'+c+'</li>').join('')+'</ul></div>').join('')+
         '<button class="btn btn-primary btn-block" data-act="upgradeApply" data-v="free">提交达标晋升申请</button>'+
